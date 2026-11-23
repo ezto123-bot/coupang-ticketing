@@ -1479,132 +1479,6 @@
             // 버튼 DOM을 재생성하지 않고 스타일·텍스트만 전환해 누르고 있는 상태에서도 매끄럽게 동작
             updateStep1MainButtonVisual();
           } else {
-            state.metrics.captchaUsed = false;
-            state.metrics.captchaDuration = null;
-            state.metrics.captchaWrongAttempts = 0;
-            enterStep4SeatSelection();
-          }
-        };
-        return;
-      }
-
-      if (!state.countdownRunning && !state.isTicketOpen) {
-        footer.innerHTML = `
-          <button id="btnStep1Main" class="btn-press w-full py-3.5 rounded-xl bg-[#0074E9] hover:bg-[#0088FF] text-white font-extrabold text-[15px] shadow-lg shadow-sky-500/20 transition">
-            티켓 오픈 카운트다운 시작 (${state.settings.countdownSec}초)
-          </button>
-        `;
-        $('#btnStep1Main').onclick = () => {
-          SoundFX.click();
-          startStep1Countdown();
-        };
-      } else if (state.countdownRunning && !state.isTicketOpen) {
-        footer.innerHTML = `
-          <button id="btnStep1Main" class="w-full py-3.5 rounded-xl bg-[#1E2332] border border-[#2F374F] text-gray-400 font-bold text-[15px] cursor-pointer transition">
-            티켓 오픈 대기중... (미리 클릭 시 리셋)
-          </button>
-        `;
-        $('#btnStep1Main').onclick = () => {
-          // 오픈 전 클릭 -> 부정 출발 감지 경고 및 카운트다운 리셋
-          state.falseStarts += 1;
-          state.countdownRunning = false;
-          state.isTicketOpen = false;
-          SoundFX.error();
-
-          const badge = $('#falseStartBadge');
-          if (badge) {
-            badge.classList.remove('hidden');
-            badge.textContent = `부정출발 ${state.falseStarts}회`;
-          }
-
-          const cdEl = $('#countdownDisplay');
-          if (cdEl) {
-            cdEl.textContent = `00:${pad2(state.settings.countdownSec)}.000`;
-            cdEl.classList.remove('text-amber-400', 'text-emerald-400');
-            cdEl.classList.add('text-[#00A7F6]');
-          }
-
-          const slot = $('#countdownActionSlot');
-          if (slot) {
-            slot.innerHTML = `
-              <button id="btnStartCountdown" class="btn-press px-3.5 py-2 rounded-xl bg-[#00A7F6]/15 hover:bg-[#00A7F6]/25 border border-[#00A7F6]/45 text-[#00A7F6] text-xs font-extrabold transition">
-                ▶ ${state.settings.countdownSec}초 다시 시작
-              </button>
-            `;
-            $('#btnStartCountdown').onclick = () => {
-              SoundFX.click();
-              startStep1Countdown();
-            };
-          }
-
-          renderStep1Footer();
-          showToast('🚨 부정 출발 감지! 카운트다운이 리셋되었습니다. 정각에 클릭하세요!', 'error');
-        };
-      } else {
-        // 정각 오픈 완료
-        footer.innerHTML = `
-          <button id="btnStep1Main" class="btn-press w-full py-3.5 rounded-xl bg-gradient-to-r from-[#0074E9] to-[#00A7F6] text-white font-extrabold text-[16px] shadow-xl shadow-sky-500/40 ring-2 ring-sky-300/60 transition">
-            티켓 예매하기
-          </button>
-        `;
-        $('#btnStep1Main').onclick = () => {
-          const reactionMs = Math.max(1, Math.round(performance.now() - state.openTargetPerf));
-          state.metrics.reactionMs = reactionMs;
-          SoundFX.click();
-          clearAllTimers();
-          showToast(`⚡ 정각 반응속도: ${reactionMs}ms`, reactionMs <= 250 ? 'success' : 'info');
-          enterStep2SessionSelect();
-        };
-      }
-    }
-
-    function startStep1Countdown() {
-      state.countdownRunning = true;
-      state.isTicketOpen = false;
-      state.openTargetPerf = performance.now() + state.settings.countdownSec * 1000;
-      state._lastBeepSec = state.settings.countdownSec + 1;
-
-      const cdEl = $('#countdownDisplay');
-      if (cdEl) {
-        cdEl.classList.remove('text-emerald-400', 'text-amber-400');
-        cdEl.classList.add('text-[#00A7F6]');
-      }
-
-      const slot = $('#countdownActionSlot');
-      if (slot) {
-        slot.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/35 text-amber-300 text-xs font-bold animate-pulse">오픈 대기중</span>`;
-      }
-      renderStep1Footer();
-    }
-
-    function startServerClockLoop() {
-      if (state.timers.clockRaf) cancelAnimationFrame(state.timers.clockRaf);
-
-      const loop = () => {
-        if (state.step !== 1) return;
-
-        const clockEl = $('#serverClockDisplay');
-        if (clockEl) clockEl.textContent = formatClockMs(new Date());
-
-        if (state.countdownRunning && !state.isTicketOpen) {
-          const remainMs = state.openTargetPerf - performance.now();
-          const cdEl = $('#countdownDisplay');
-
-          if (remainMs <= 0) {
-            state.isTicketOpen = true;
-            state.countdownRunning = false;
-            if (cdEl) {
-              cdEl.textContent = '00:00.000 OPEN!';
-              cdEl.classList.remove('text-[#00A7F6]', 'text-amber-400');
-              cdEl.classList.add('text-emerald-400');
-            }
-            const slot = $('#countdownActionSlot');
-            if (slot) {
-              slot.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold">NOW OPEN</span>`;
-            }
-            SoundFX.open();
-            renderStep1Footer();
-          } else {
             const sec = Math.floor(remainMs / 1000);
             const ms = Math.floor(remainMs % 1000);
             if (cdEl) {
@@ -1624,6 +1498,135 @@
         state.timers.clockRaf = requestAnimationFrame(loop);
       };
       state.timers.clockRaf = requestAnimationFrame(loop);
+    }
+
+    /* =========================================================================
+       10. STEP 2: 회차 선택 및 예매 유의사항 동의 (닉네임 연동)
+       ========================================================================= */
+    function enterStep2SessionSelect() {
+      state.step = 2;
+      if (!state.metrics.step2Start) {
+        state.metrics.step2Start = performance.now();
+      }
+
+      const nickSafe = escapeHtml(state.nickname || '게스트');
+      const reactBadge = state.metrics.reactionMs !== null
+        ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#00A7F6]/15 text-[#00A7F6] border border-[#00A7F6]/35 font-mono tabular-nums">${state.metrics.reactionMs}ms</span>`
+        : '';
+
+      setHeader({
+        title: '회차 선택 및 동의',
+        showBack: true,
+        onBack: () => { SoundFX.click(); resetSimulation(false); },
+        progressPct: 33,
+        rightHtml: reactBadge
+      });
+
+      const content = $('#appContent');
+      content.scrollTop = 0;
+      content.innerHTML = `
+        <div class="p-4 space-y-4 step-enter pb-6">
+          <!-- 공연 요약 헤더 -->
+          <div class="p-3.5 rounded-2xl bg-[#151922] border border-[#252B3B]">
+            <div class="text-[11px] font-bold text-[#00A7F6]">${CONCERT_INFO.subtitle}</div>
+            <div class="text-sm font-extrabold text-white mt-0.5">${CONCERT_INFO.title}</div>
+            <div class="text-xs text-gray-400 mt-1">📍 ${CONCERT_INFO.venue} · ${CONCERT_INFO.dateRange}</div>
+          </div>
+
+          <!-- 회차 선택 영역 -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between px-1">
+              <h2 class="text-sm font-bold text-white">관람 회차를 선택해 주세요</h2>
+              <span class="text-[11px] font-semibold text-sky-300">1인 ${state.settings.qty}매 선택</span>
+            </div>
+
+            <div class="space-y-2">
+              ${CONCERT_INFO.sessions.map((s) => {
+                const isSelected = state.selectedSessionId === s.id;
+                return `
+                  <button data-session-id="${s.id}" type="button" class="session-btn btn-press w-full p-4 rounded-2xl border-2 text-left flex items-center justify-between transition ${
+                    isSelected
+                      ? 'bg-[#00A7F6]/12 border-[#00A7F6] shadow-lg shadow-sky-500/15'
+                      : 'bg-[#151922] border-[#252B3B] hover:border-[#37425C]'
+                  }">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-sm font-extrabold text-white">${s.dateLabel}</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${isSelected ? 'bg-[#00A7F6] text-white' : 'bg-[#202638] text-gray-300'}">${s.dayTag}</span>
+                      </div>
+                      <div class="text-xs text-gray-400 mt-1">공연 시작 <strong class="text-sky-300 font-mono">${s.timeLabel}</strong> · ${CONCERT_INFO.venue}</div>
+                    </div>
+                    <div class="session-radio w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      isSelected ? 'border-[#00A7F6] bg-[#00A7F6]' : 'border-gray-500'
+                    }">
+                      ${isSelected ? '<span class="w-2 h-2 rounded-full bg-white"></span>' : ''}
+                    </div>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- 와우회원 본인 확인 및 부정 예매 방지 동의 -->
+          <div class="p-4 rounded-2xl bg-[#151922] border border-[#252B3B] space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-extrabold text-white">예매자 본인 확인 및 유의사항</h3>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-[#0074E9]/20 text-[#38BDF8] font-bold">WOW 회원</span>
+            </div>
+            <ul class="text-[11px] text-gray-400 space-y-1 list-disc list-inside leading-relaxed">
+              <li>본 공연은 <strong class="text-gray-200">${nickSafe}</strong>님 본인 명의 모바일 티켓으로 발급됩니다.</li>
+              <li>매크로 등 부정한 방법을 통한 예매 적발 시 사전 통보 없이 취소될 수 있습니다.</li>
+              <li>좌석 선택 진입 후 <strong class="text-gray-200">8분 이내</strong> 결제를 완료해야 선점이 유지됩니다.</li>
+            </ul>
+
+            <label class="flex items-center gap-3 p-3.5 rounded-xl bg-[#0E1119] border border-[#2A3248] hover:border-[#00A7F6]/60 cursor-pointer transition">
+              <input type="checkbox" id="chkStep2Agree" ${state.agreedTerms ? 'checked' : ''} class="w-5 h-5 accent-[#00A7F6] rounded cursor-pointer shrink-0" />
+              <span class="text-xs font-bold text-white leading-snug">
+                [필수] ${nickSafe}님 본인 예매 확인 및 예매 유의사항에 모두 동의합니다.
+              </span>
+            </label>
+          </div>
+        </div>
+      `;
+
+      // 회차 버튼 선택 이벤트
+      $$('.session-btn').forEach((btn) => {
+        btn.onclick = () => {
+          SoundFX.click();
+          state.selectedSessionId = btn.dataset.sessionId;
+          enterStep2SessionSelect();
+        };
+      });
+
+      // 필수 동의 체크박스 이벤트
+      $('#chkStep2Agree').onchange = (e) => {
+        SoundFX.click();
+        state.agreedTerms = e.target.checked;
+        updateStep2Footer();
+      };
+
+      updateStep2Footer();
+    }
+
+    function updateStep2Footer() {
+      const ready = Boolean(state.selectedSessionId && state.agreedTerms);
+      $('#appFooter').innerHTML = `
+        <button id="btnStep2Next" ${ready ? '' : 'disabled'} class="btn-press w-full py-3.5 rounded-xl font-extrabold text-[15px] transition ${
+          ready
+            ? 'bg-gradient-to-r from-[#0074E9] to-[#00A7F6] text-white shadow-lg shadow-sky-500/30'
+            : 'bg-[#1B202E] text-gray-500 cursor-not-allowed'
+        }">
+          ${ready ? '다음 단계 (대기열 진입)' : '회차 선택 및 필수 동의를 완료해 주세요'}
+        </button>
+      `;
+
+      if (ready) {
+        $('#btnStep2Next').onclick = () => {
+          SoundFX.click();
+          state.metrics.step2Duration = (performance.now() - state.metrics.step2Start) / 1000;
+          enterStep3Queue();
+        };
+      }
     }
 
     /* =========================================================================
