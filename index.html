@@ -1,0 +1,2775 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>쿠팡플레이 올림픽홀 콘서트 티켓팅 실전 연습 시뮬레이터</title>
+  <meta name="description" content="2027.02.19~21 서울 올림픽공원 올림픽홀 콘서트! 밀리초 서버 시계, 대기열, 이선좌, 취켓팅, 쿠페이 6자리 랜덤 보안 키패드까지 연습하는 쿠팡플레이 티켓팅 시뮬레이터" />
+
+  <!-- 카카오톡·커뮤니티 공유용 오픈그래프(Open Graph) 메타 태그 -->
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:site_name" content="쿠팡플레이 티켓팅 연습" />
+  <meta property="og:title" content="쿠팡플레이 올림픽홀 콘서트 티켓팅 연습 시뮬레이터" />
+  <meta property="og:description" content="2027.02.19(금)~21(일) 서울 올림픽공원 올림픽홀! 정규 티켓팅부터 취켓팅(취소표), 이선좌, 쿠페이 보안 키패드까지 실전처럼 연습해보세요." />
+
+  <!-- 트위터(X) 및 일부 메신저 미리보기 카드 -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="쿠팡플레이 올림픽홀 콘서트 티켓팅 연습 시뮬레이터" />
+  <meta name="twitter:description" content="2027.02.19(금)~21(일) 서울 올림픽공원 올림픽홀! 정규 티켓팅부터 취켓팅(취소표), 이선좌, 쿠페이 보안 키패드까지 실전처럼 연습해보세요." />
+
+  <!--
+    [선택 설정] GitHub Pages 배포 주소와 썸네일 이미지를 추가하고 싶다면 아래 주석을 해제하고 본인 주소로 수정하세요.
+    ※ 썸네일 이미지를 저장소에 올리지 않은 상태에서 주석을 해제하면 깨진 이미지가 표시될 수 있으므로, 실제 이미지(권장 1200x630px) 업로드 후 사용하세요.
+    <meta property="og:url" content="https://본인아이디.github.io/저장소이름/" />
+    <meta property="og:image" content="https://본인아이디.github.io/저장소이름/thumbnail.png" />
+  -->
+
+  <!-- Pretendard & Noto Sans KR Web Fonts -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', 'Noto Sans KR', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+          },
+          colors: {
+            cp: {
+              bg: '#0b0c10',
+              card: '#161822',
+              cardHover: '#1d202e',
+              border: '#252836',
+              blue: '#00A8FF',
+              blueDeep: '#0074E9',
+              text: '#F3F4F6',
+              muted: '#9CA3AF'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #050608;
+      color: #F3F4F6;
+      font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* 숫자 폭 고정 (타이머 흔들림 방지) */
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 커스텀 스크롤바 */
+    .app-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .app-scroll::-webkit-scrollbar-track {
+      background: #0b0c10;
+    }
+    .app-scroll::-webkit-scrollbar-thumb {
+      background: #2b3044;
+      border-radius: 9999px;
+    }
+
+    /* 화면 전환 애니메이션 */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .step-enter {
+      animation: fadeSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* 취소표 반짝임 애니메이션 */
+    @keyframes cancelFlash {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0, 168, 255, 0.85); transform: scale(1); }
+      50% { box-shadow: 0 0 12px 3px rgba(0, 168, 255, 0.9); transform: scale(1.08); }
+    }
+    .cancel-pulse {
+      animation: cancelFlash 0.7s ease-in-out infinite;
+    }
+
+    /* 핀 입력 오류 흔들림 */
+    @keyframes shakeX {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .animate-shake {
+      animation: shakeX 0.35s ease-in-out;
+    }
+
+    /* 버튼 클릭 즉각 피드백 */
+    .btn-press:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    /* 티켓 펀치홀 효과 */
+    .ticket-notch-left, .ticket-notch-right {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: #0b0c10;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .ticket-notch-left { left: -10px; }
+    .ticket-notch-right { right: -10px; }
+
+    /* 구역 SVG 인터랙션 */
+    .zone-shape {
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .zone-shape:hover {
+      filter: brightness(1.22);
+    }
+    .zone-shape.sold-out {
+      fill: #1f222e !important;
+      stroke: #2e3345 !important;
+    }
+    .zone-shape.cancel-hot {
+      stroke: #38bdf8 !important;
+      stroke-width: 2.5px !important;
+      filter: drop-shadow(0 0 8px rgba(0, 168, 255, 0.85));
+    }
+
+    /* 모바일 프레임 스타일 (PC에서 표시) */
+    @media (min-width: 640px) {
+      .mobile-frame {
+        width: 430px;
+        height: calc(100vh - 96px);
+        max-height: 860px;
+        min-height: 640px;
+        border-radius: 32px;
+        border: 1px solid #262a3a;
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 4px rgba(255, 255, 255, 0.03);
+      }
+    }
+    @media (max-width: 639px) {
+      .mobile-frame {
+        width: 100%;
+        min-height: calc(100dvh - 54px);
+        border-radius: 0;
+        border: none;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center bg-[#050608] text-gray-100 select-none">
+
+  <!-- ===================================================================== -->
+  <!-- 상단 연습 설정 컨트롤 바 (PC: 항상 노출 / 모바일: 접기/펼치기 가능)        -->
+  <!-- ===================================================================== -->
+  <header class="w-full bg-[#10121a]/95 backdrop-blur-md border-b border-[#222536] sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+      <!-- 브랜드 로고 & 모바일 설정 토글 -->
+      <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-1.5">
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-[#00A8FF] to-[#0074E9] text-white font-black text-sm shadow-md shadow-sky-500/20">▶</span>
+          <div class="leading-tight">
+            <div class="text-sm font-extrabold tracking-tight text-white flex items-center gap-1.5">
+              <span>쿠팡플레이</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30">티켓팅 연습</span>
+            </div>
+          </div>
+        </div>
+        <button id="btnToggleMobileSettings" class="sm:hidden text-xs px-2.5 py-1 rounded-lg bg-[#1a1d2b] border border-[#2a2f42] text-gray-300 flex items-center gap-1">
+          <span>⚙️ 설정</span>
+          <span id="mobileSettingsArrow">▾</span>
+        </button>
+      </div>
+
+      <!-- 우측 빠른 액션 (기록 / 사운드 / 리셋) -->
+      <div class="flex items-center gap-1.5 order-2 sm:order-3">
+        <button id="btnOpenHistory" class="btn-press text-xs px-2.5 py-1.5 rounded-lg bg-[#181b28] hover:bg-[#222638] border border-[#2a2f42] text-gray-200 font-medium flex items-center gap-1 transition">
+          <span>🏆</span><span class="hidden xs:inline">기록</span>
+          <span id="bestTimeBadge" class="text-[11px] text-[#00A8FF] font-bold tabular-nums"></span>
+        </button>
+        <button id="btnToggleSound" title="효과음 켜기/끄기" class="btn-press text-xs w-8 h-8 rounded-lg bg-[#181b28] hover:bg-[#222638] border border-[#2a2f42] flex items-center justify-center transition">
+          🔊
+        </button>
+        <button id="btnGlobalReset" title="처음부터 다시 연습" class="btn-press text-xs px-2.5 py-1.5 rounded-lg bg-[#0074E9]/20 hover:bg-[#0074E9]/35 border border-[#00A8FF]/40 text-[#38bdf8] font-semibold transition">
+          ↺ 초기화
+        </button>
+      </div>
+
+      <!-- 설정 컨트롤 패널 -->
+      <div id="settingsControls" class="hidden sm:flex flex-wrap items-center gap-2 w-full sm:w-auto order-3 sm:order-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#202434] text-xs">
+        <!-- 연습 모드 -->
+        <div class="flex items-center bg-[#161822] p-0.5 rounded-lg border border-[#262a3d]">
+          <button data-setting="mode" data-value="regular" class="setting-btn px-2.5 py-1 rounded-md font-semibold transition">정규 티켓팅</button>
+          <button data-setting="mode" data-value="cancel" class="setting-btn px-2.5 py-1 rounded-md font-semibold transition">취켓팅</button>
+        </div>
+
+        <!-- 난이도 -->
+        <div class="flex items-center bg-[#161822] p-0.5 rounded-lg border border-[#262a3d]">
+          <button data-setting="difficulty" data-value="easy" class="setting-btn px-2 py-1 rounded-md font-semibold transition">쉬움</button>
+          <button data-setting="difficulty" data-value="normal" class="setting-btn px-2 py-1 rounded-md font-semibold transition">보통</button>
+          <button data-setting="difficulty" data-value="hell" class="setting-btn px-2 py-1 rounded-md font-semibold transition">지옥🔥</button>
+        </div>
+
+        <!-- 카운트다운 -->
+        <div class="flex items-center gap-1 bg-[#161822] px-2 py-1 rounded-lg border border-[#262a3d]">
+          <span class="text-gray-400">대기</span>
+          <select id="selectCountdown" class="bg-transparent text-white font-semibold focus:outline-none cursor-pointer">
+            <option value="3" class="bg-[#161822]">3초</option>
+            <option value="5" selected class="bg-[#161822]">5초</option>
+            <option value="10" class="bg-[#161822]">10초</option>
+          </select>
+        </div>
+
+        <!-- 매수 -->
+        <div class="flex items-center bg-[#161822] p-0.5 rounded-lg border border-[#262a3d]">
+          <button data-setting="qty" data-value="1" class="setting-btn px-2 py-1 rounded-md font-semibold transition">1매</button>
+          <button data-setting="qty" data-value="2" class="setting-btn px-2 py-1 rounded-md font-semibold transition">2매</button>
+        </div>
+
+        <!-- 보안 키패드 토글 -->
+        <label class="flex items-center gap-1.5 bg-[#161822] px-2.5 py-1 rounded-lg border border-[#262a3d] cursor-pointer hover:border-[#373d57]">
+          <input type="checkbox" id="toggleKeypad" checked class="accent-[#00A8FF] w-3.5 h-3.5 rounded cursor-pointer" />
+          <span class="text-gray-200 font-medium">쿠페이 PIN</span>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- 메인 스테이지: 모바일 앱 프레임 (PC 중앙 430px / 모바일 풀스크린)            -->
+  <!-- ===================================================================== -->
+  <main class="w-full flex-1 flex items-center justify-center sm:py-4">
+    <div id="appFrame" class="mobile-frame relative bg-[#0b0c10] flex flex-col overflow-hidden">
+
+      <!-- 상단 앱 내부 네비게이션 바 -->
+      <div id="appHeader" class="shrink-0 h-13 px-4 py-3 bg-[#0b0c10]/95 backdrop-blur border-b border-[#1c1f2c] flex items-center justify-between z-20">
+        <div class="flex items-center gap-2 min-w-0">
+          <button id="btnAppBack" class="hidden w-8 h-8 -ml-1.5 rounded-full hover:bg-[#1a1d2a] flex items-center justify-center text-gray-300 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <h1 id="appHeaderTitle" class="text-[15px] font-bold text-white truncate">공연 상세 정보</h1>
+        </div>
+        <div id="appHeaderRight" class="flex items-center gap-2 shrink-0">
+          <!-- 동적 우측 요소 (스텝 뱃지 / 8분 타이머 등) -->
+        </div>
+      </div>
+
+      <!-- 스텝 진행 표시 바 (미니 인디케이터) -->
+      <div id="stepProgressBar" class="shrink-0 h-1 bg-[#161822] w-full overflow-hidden">
+        <div id="stepProgressFill" class="h-full bg-gradient-to-r from-[#0074E9] to-[#00A8FF] transition-all duration-300" style="width: 16%"></div>
+      </div>
+
+      <!-- 앱 메인 콘텐츠 영역 (스크롤 가능) -->
+      <div id="appContent" class="flex-1 overflow-y-auto app-scroll relative">
+        <!-- JS로 각 Step 화면 동적 렌더링 -->
+      </div>
+
+      <!-- 하단 고정 CTA 바 -->
+      <div id="appFooter" class="shrink-0 bg-[#10121a]/95 backdrop-blur-md border-t border-[#1e2230] px-4 py-3 z-20">
+        <!-- JS로 Step별 하단 버튼 렌더링 -->
+      </div>
+
+      <!-- 인앱 토스트 알림 컨테이너 -->
+      <div id="toastContainer" class="pointer-events-none absolute top-16 left-4 right-4 z-50 flex flex-col items-center gap-2"></div>
+
+      <!-- 인앱 모달 오버레이 (이선좌 알림 / 쿠페이 키패드 등) -->
+      <div id="modalOverlay" class="hidden absolute inset-0 bg-black/75 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+        <div id="modalBox" class="w-full max-w-[360px] bg-[#161822] border border-[#2a2f42] rounded-2xl shadow-2xl overflow-hidden step-enter">
+          <!-- 모달 콘텐츠 동적 삽입 -->
+        </div>
+      </div>
+
+      <!-- 쿠페이 6자리 랜덤 보안 키패드 바텀시트 -->
+      <div id="keypadOverlay" class="hidden absolute inset-0 bg-black/80 backdrop-blur-[2px] z-50 flex flex-col justify-end">
+        <div class="bg-[#141620] border-t border-[#2a2f42] rounded-t-3xl px-5 pt-5 pb-6 shadow-2xl step-enter">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-[#0074E9] text-white text-[11px] font-extrabold">쿠페이</span>
+              <span class="text-sm font-bold text-white">결제 비밀번호 입력</span>
+            </div>
+            <button id="btnCloseKeypad" class="text-gray-400 hover:text-white p-1 text-lg leading-none">✕</button>
+          </div>
+
+          <!-- 연습용 비밀번호 안내 -->
+          <div class="mb-4 px-3 py-2 rounded-xl bg-[#00A8FF]/10 border border-[#00A8FF]/30 flex items-center justify-between">
+            <span class="text-xs text-sky-200">연습용 PIN 번호</span>
+            <span id="keypadHintCode" class="text-sm font-black tracking-[0.25em] text-[#00A8FF] font-mono">123456</span>
+          </div>
+
+          <!-- 6자리 도트 표시 -->
+          <div id="keypadDots" class="flex items-center justify-center gap-3.5 my-5">
+            <div class="pin-dot w-3.5 h-3.5 rounded-full bg-[#2a2f42] transition-all"></div>
+            <div class="pin-dot w-3.5 h-3.5 rounded-full bg-[#2a2f42] transition-all"></div>
+            <div class="pin-dot w-3.5 h-3.5 rounded-full bg-[#2a2f42] transition-all"></div>
+            <div class="pin-dot w-3.5 h-3.5 rounded-full bg-[#2a2f42] transition-all"></div>
+            <div class="pin-dot w-3.5 h-3.5 rounded-full bg-[#2a2f42] transition-all"></div>
+            <div class="pin-dot w-3.5 h-3.5 rounded-full bg-[#2a2f42] transition-all"></div>
+          </div>
+
+          <p id="keypadErrorMsg" class="text-center text-xs text-red-400 h-4 mb-2 font-medium"></p>
+
+          <!-- 랜덤 3x4 보안 숫자 패드 -->
+          <div id="keypadGrid" class="grid grid-cols-3 gap-2">
+            <!-- JS에서 매번 0~9 무작위 배열 생성 -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- 전역 기록 조회 모달 (PC/모바일 공용) -->
+  <div id="historyModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-[#161822] border border-[#2a2f42] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] step-enter">
+      <div class="px-5 py-4 border-b border-[#252836] flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-1.5">🏆 나의 티켓팅 연습 기록</h2>
+          <p class="text-xs text-gray-400 mt-0.5">최근 10회 기록과 최고 기록이 자동 저장됩니다.</p>
+        </div>
+        <button id="btnCloseHistory" class="w-8 h-8 rounded-lg hover:bg-[#232738] flex items-center justify-center text-gray-400 hover:text-white">✕</button>
+      </div>
+      <div id="historyBody" class="p-4 overflow-y-auto app-scroll flex-1 space-y-3">
+        <!-- 동적 렌더링 -->
+      </div>
+      <div class="px-5 py-3 border-t border-[#252836] flex items-center justify-between bg-[#12141d]">
+        <button id="btnClearHistory" class="text-xs text-red-400 hover:text-red-300 font-medium">기록 전체 삭제</button>
+        <button id="btnCloseHistory2" class="px-4 py-2 rounded-xl bg-[#0074E9] hover:bg-[#0088ff] text-white text-xs font-bold">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. 사운드 엔진 (Web Audio API - 외부 오디오 파일 없이 즉각 합성)
+       ========================================================================= */
+    const SoundFX = {
+      ctx: null,
+      enabled: true,
+      init() {
+        if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+          try {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+          } catch (e) {}
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+      },
+      playTone(freq, duration = 0.08, type = 'sine', gainVal = 0.12, delay = 0) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime + delay;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(gainVal, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration);
+        } catch (e) {}
+      },
+      click() { this.playTone(680, 0.045, 'triangle', 0.09); },
+      tick() { this.playTone(880, 0.05, 'sine', 0.07); },
+      open() {
+        this.playTone(1046.5, 0.12, 'sine', 0.14, 0);
+        this.playTone(1318.5, 0.18, 'sine', 0.16, 0.08);
+      },
+      cancelDrop() {
+        this.playTone(920, 0.07, 'sine', 0.09, 0);
+        this.playTone(1240, 0.11, 'sine', 0.09, 0.07);
+      },
+      error() {
+        this.playTone(230, 0.14, 'sawtooth', 0.11, 0);
+        this.playTone(175, 0.18, 'sawtooth', 0.11, 0.11);
+      },
+      key() { this.playTone(540 + Math.random() * 60, 0.035, 'sine', 0.07); },
+      success() {
+        this.playTone(523.25, 0.12, 'triangle', 0.14, 0);
+        this.playTone(659.25, 0.12, 'triangle', 0.14, 0.1);
+        this.playTone(783.99, 0.14, 'triangle', 0.15, 0.2);
+        this.playTone(1046.5, 0.35, 'triangle', 0.18, 0.3);
+      }
+    };
+
+    /* =========================================================================
+       2. 전역 설정 및 콘서트/구역 메타 데이터
+       ========================================================================= */
+    const STORAGE_KEY = 'cp_ticketing_sim_records_v1';
+
+    const CONCERT_INFO = {
+      title: '2027 LIVE CONCERT IN SEOUL',
+      subtitle: 'COUPANG PLAY EXCLUSIVE · OLYMPIC HALL',
+      venue: '서울 올림픽공원 올림픽홀 (Olympic Park Olympic Hall)',
+      venueShort: '서울 올림픽공원 올림픽홀',
+      dateRange: '2027.02.19(금) ~ 02.21(일)',
+      ageLimit: '만 7세 이상 관람가',
+      runningTime: '150분 (인터미션 없음)',
+      feePerTicket: 2000,
+      sessions: [
+        { id: 's1', dateLabel: '2027.02.19 (금)', timeLabel: '19:30', dayTag: '1회차 · 첫콘' },
+        { id: 's2', dateLabel: '2027.02.20 (토)', timeLabel: '18:00', dayTag: '2회차 · 인기' },
+        { id: 's3', dateLabel: '2027.02.21 (일)', timeLabel: '17:00', dayTag: '3회차 · 막콘' }
+      ],
+      grades: {
+        VIP: { name: 'VIP석 (1층 플로어 A1~A3)', price: 187000, color: '#a855f7', bg: 'bg-purple-500/20', text: 'text-purple-300', hex: '#9333ea' },
+        R:   { name: 'R석 (2층 지정석 B1~B4)',   price: 154000, color: '#00A8FF', bg: 'bg-sky-500/20',    text: 'text-sky-300',    hex: '#0284c7' },
+        S:   { name: 'S석 (2층 상단 C1~C3)',     price: 121000, color: '#10b981', bg: 'bg-emerald-500/20',text: 'text-emerald-300',hex: '#059669' }
+      },
+      // 서울 올림픽공원 올림픽홀 구조 반영 (1층 플로어 A1~A3, 2층 지정석 B1~B4 / C1~C3)
+      zones: [
+        { id: 'A1', name: '1층 플로어 A1구역', grade: 'VIP', floor: '1F', rows: 6, cols: 8,  svgType: 'rect', x: 26,  y: 86,  w: 90, h: 70 },
+        { id: 'A2', name: '1층 플로어 A2구역', grade: 'VIP', floor: '1F', rows: 6, cols: 8,  svgType: 'rect', x: 125, y: 86,  w: 90, h: 70 },
+        { id: 'A3', name: '1층 플로어 A3구역', grade: 'VIP', floor: '1F', rows: 6, cols: 8,  svgType: 'rect', x: 224, y: 86,  w: 90, h: 70 },
+        { id: 'B1', name: '2층 지정석 B1구역', grade: 'R',   floor: '2F', rows: 6, cols: 8,  svgType: 'rect', x: 18,  y: 186, w: 71, h: 64 },
+        { id: 'B2', name: '2층 지정석 B2구역', grade: 'R',   floor: '2F', rows: 6, cols: 9,  svgType: 'rect', x: 96,  y: 194, w: 71, h: 64 },
+        { id: 'B3', name: '2층 지정석 B3구역', grade: 'R',   floor: '2F', rows: 6, cols: 9,  svgType: 'rect', x: 173, y: 194, w: 71, h: 64 },
+        { id: 'B4', name: '2층 지정석 B4구역', grade: 'R',   floor: '2F', rows: 6, cols: 8,  svgType: 'rect', x: 251, y: 186, w: 71, h: 64 },
+        { id: 'C1', name: '2층 지정석 C1구역', grade: 'S',   floor: '2F', rows: 5, cols: 9,  svgType: 'rect', x: 32,  y: 274, w: 86, h: 56 },
+        { id: 'C2', name: '2층 지정석 C2구역', grade: 'S',   floor: '2F', rows: 5, cols: 10, svgType: 'rect', x: 127, y: 282, w: 86, h: 56 },
+        { id: 'C3', name: '2층 지정석 C3구역', grade: 'S',   floor: '2F', rows: 5, cols: 9,  svgType: 'rect', x: 222, y: 274, w: 86, h: 56 }
+      ]
+    };
+
+    const DIFFICULTY_CFG = {
+      easy: {
+        label: '쉬움',
+        badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        initialSoldRatio: 0.22,
+        drainIntervalMs: 1150,
+        drainBatch: [1, 3],
+        iseonjwaProb: 0.12,
+        cancelIntervalMs: [1200, 2200],
+        cancelHoldMs: [4500, 6800],
+        queueMult: 0.45
+      },
+      normal: {
+        label: '보통',
+        badgeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+        initialSoldRatio: 0.50,
+        drainIntervalMs: 520,
+        drainBatch: [3, 8],
+        iseonjwaProb: 0.28,
+        cancelIntervalMs: [1400, 2600],
+        cancelHoldMs: [3000, 4800],
+        queueMult: 1.0
+      },
+      hell: {
+        label: '지옥🔥',
+        badgeClass: 'bg-red-500/20 text-red-300 border-red-500/30',
+        initialSoldRatio: 0.74,
+        drainIntervalMs: 260,
+        drainBatch: [6, 15],
+        iseonjwaProb: 0.48,
+        cancelIntervalMs: [1600, 3000],
+        cancelHoldMs: [1900, 3200],
+        queueMult: 2.3
+      }
+    };
+
+    /* =========================================================================
+       3. 애플리케이션 상태 관리
+       ========================================================================= */
+    const state = {
+      // 사용자 설정
+      settings: {
+        mode: 'regular',      // 'regular' | 'cancel'
+        difficulty: 'normal', // 'easy' | 'normal' | 'hell'
+        countdownSec: 5,      // 3 | 5 | 10
+        qty: 1,               // 1 | 2
+        useKeypad: true
+      },
+
+      // 현재 단계 (0~5)
+      step: 0,
+
+      // Step 0 카운트다운 상태
+      countdownRunning: false,
+      isTicketOpen: false,
+      openTargetPerf: 0,
+      openTargetDateMs: 0,
+      falseStarts: 0,
+
+      // Step 1 회차 & 동의
+      selectedSessionId: null,
+      agreedIdentity: false,
+
+      // Step 2 대기열
+      queueInitial: 0,
+      queueCurrent: 0,
+
+      // Step 3 좌석 상태
+      seatMode: 'direct',     // 'direct' | 'auto'
+      activeZoneId: null,     // null이면 전체 구역 맵, 값이 있으면 해당 구역 상세 좌석도
+      selectedGradeForAuto: 'VIP',
+      seatsByZone: {},        // { zoneId: [ { id, row, col, status: 'available'|'sold'|'cancel_hot' } ] }
+      selectedSeats: [],      // [ { zoneId, zoneName, grade, price, seatId, row, col } ]
+      holdRemainingSec: 480,  // 8분 (480초)
+      iseonjwaCount: 0,
+      cancelDropCount: 0,
+
+      // Step 4 결제
+      agreedPaymentTerms: false,
+      paymentMethod: 'coupay',
+      pinCodeTarget: '123456',
+      pinInput: '',
+
+      // 타이밍 정밀 측정 (performance.now 기준)
+      metrics: {
+        reactionMs: null,
+        step1Start: 0,
+        step1Duration: 0,
+        queueDuration: 0,
+        step3Start: 0,
+        step3Duration: 0,
+        step4Start: 0,
+        step4Duration: 0,
+        totalActiveSec: 0,
+        resultSuccess: false,
+        failReason: ''
+      },
+
+      // 타이머 핸들 모음 (안전한 해제를 위해 중앙 관리)
+      timers: {
+        clockRaf: null,
+        queueInterval: null,
+        holdInterval: null,
+        drainInterval: null,
+        cancelTimeout: null,
+        cancelExpireTimeouts: []
+      }
+    };
+
+    /* =========================================================================
+       4. 유틸리티 & UI 헬퍼
+       ========================================================================= */
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+
+    function clearAllTimers() {
+      if (state.timers.clockRaf) cancelAnimationFrame(state.timers.clockRaf);
+      if (state.timers.queueInterval) clearInterval(state.timers.queueInterval);
+      if (state.timers.holdInterval) clearInterval(state.timers.holdInterval);
+      if (state.timers.drainInterval) clearInterval(state.timers.drainInterval);
+      if (state.timers.cancelTimeout) clearTimeout(state.timers.cancelTimeout);
+      state.timers.cancelExpireTimeouts.forEach((t) => clearTimeout(t));
+      state.timers = {
+        clockRaf: null,
+        queueInterval: null,
+        holdInterval: null,
+        drainInterval: null,
+        cancelTimeout: null,
+        cancelExpireTimeouts: []
+      };
+    }
+
+    function formatMoney(num) {
+      return Number(num).toLocaleString('ko-KR') + '원';
+    }
+
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function pad3(n) { return String(n).padStart(3, '0'); }
+
+    function formatClockMs(dateObj) {
+      return `${pad2(dateObj.getHours())}:${pad2(dateObj.getMinutes())}:${pad2(dateObj.getSeconds())}.${pad3(dateObj.getMilliseconds())}`;
+    }
+
+    function formatMinSec(sec) {
+      const m = Math.floor(Math.max(0, sec) / 60);
+      const s = Math.floor(Math.max(0, sec) % 60);
+      return `${pad2(m)}:${pad2(s)}`;
+    }
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // 토스트 알림 (alert 대체)
+    function showToast(message, type = 'info') {
+      const container = $('#toastContainer');
+      const colors = {
+        info: 'bg-[#1c2030]/95 border-[#323852] text-white',
+        error: 'bg-red-950/95 border-red-500/60 text-red-100',
+        success: 'bg-emerald-950/95 border-emerald-500/60 text-emerald-100',
+        cancel: 'bg-sky-950/95 border-[#00A8FF] text-sky-100 shadow-sky-500/20'
+      };
+      const el = document.createElement('div');
+      el.className = `px-4 py-2.5 rounded-xl border text-xs font-semibold shadow-lg backdrop-blur-md transition-all duration-200 max-w-full text-center ${colors[type] || colors.info}`;
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-8px)';
+      el.textContent = message;
+      container.appendChild(el);
+
+      requestAnimationFrame(() => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      });
+
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-6px)';
+        setTimeout(() => el.remove(), 220);
+      }, 2100);
+    }
+
+    // 인앱 커스텀 모달 (이선좌 등)
+    function showModal({ icon = '⚠️', title, body, buttonText = '확인', onConfirm = null }) {
+      const overlay = $('#modalOverlay');
+      const box = $('#modalBox');
+      box.innerHTML = `
+        <div class="p-6 text-center">
+          <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-[#1f2436] flex items-center justify-center text-2xl">${icon}</div>
+          <h3 class="text-base font-bold text-white mb-2">${title}</h3>
+          <p class="text-xs text-gray-300 leading-relaxed whitespace-pre-line">${body}</p>
+        </div>
+        <div class="px-5 pb-5">
+          <button id="modalConfirmBtn" class="btn-press w-full py-3 rounded-xl bg-gradient-to-r from-[#0074E9] to-[#00A8FF] text-white font-bold text-sm shadow-lg shadow-sky-500/20">
+            ${buttonText}
+          </button>
+        </div>
+      `;
+      overlay.classList.remove('hidden');
+      $('#modalConfirmBtn').onclick = () => {
+        SoundFX.click();
+        overlay.classList.add('hidden');
+        if (onConfirm) onConfirm();
+      };
+    }
+
+    /* =========================================================================
+       5. LocalStorage 기록 관리
+       ========================================================================= */
+    function loadRecords() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveRecord(record) {
+      try {
+        const list = loadRecords();
+        list.unshift(record);
+        const trimmed = list.slice(0, 10);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+        updateBestTimeBadge();
+      } catch (e) {}
+    }
+
+    function updateBestTimeBadge() {
+      const records = loadRecords().filter((r) => r.success);
+      const badge = $('#bestTimeBadge');
+      if (records.length === 0) {
+        badge.textContent = '';
+        return;
+      }
+      const best = records.reduce((min, r) => (r.totalActiveSec < min.totalActiveSec ? r : min), records[0]);
+      badge.textContent = `BEST ${best.totalActiveSec.toFixed(2)}s`;
+    }
+
+    function renderHistoryModal() {
+      const records = loadRecords();
+      const body = $('#historyBody');
+      if (records.length === 0) {
+        body.innerHTML = `
+          <div class="py-12 text-center text-gray-400">
+            <div class="text-3xl mb-2">🎟️</div>
+            <p class="text-sm font-medium text-gray-300">아직 완료된 연습 기록이 없습니다.</p>
+            <p class="text-xs text-gray-500 mt-1">티켓팅을 완료하면 상세 기록이 저장됩니다.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const successes = records.filter((r) => r.success);
+      const bestTotal = successes.length ? Math.min(...successes.map((r) => r.totalActiveSec)) : null;
+      const validReactions = records.filter((r) => typeof r.reactionMs === 'number');
+      const bestReact = validReactions.length ? Math.min(...validReactions.map((r) => r.reactionMs)) : null;
+
+      let html = `
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="p-3 rounded-xl bg-[#0e1017] border border-[#242838]">
+            <div class="text-[11px] text-gray-400">최고 완료 기록 (순수)</div>
+            <div class="text-lg font-extrabold text-[#00A8FF] tabular-nums mt-0.5">${bestTotal !== null ? bestTotal.toFixed(2) + '초' : '-'}</div>
+          </div>
+          <div class="p-3 rounded-xl bg-[#0e1017] border border-[#242838]">
+            <div class="text-[11px] text-gray-400">최고 정각 반응속도</div>
+            <div class="text-lg font-extrabold text-emerald-400 tabular-nums mt-0.5">${bestReact !== null ? bestReact + 'ms' : '-'}</div>
+          </div>
+        </div>
+        <div class="space-y-2">
+      `;
+
+      records.forEach((r) => {
+        const modeLabel = r.mode === 'cancel' ? '취켓팅' : '정규';
+        const diffLabel = DIFFICULTY_CFG[r.difficulty]?.label || r.difficulty;
+        const gradeColors = {
+          'S+': 'text-fuchsia-400 bg-fuchsia-500/15 border-fuchsia-500/40',
+          'S': 'text-[#00A8FF] bg-sky-500/15 border-sky-500/40',
+          'A': 'text-emerald-400 bg-emerald-500/15 border-emerald-500/40',
+          'B': 'text-amber-400 bg-amber-500/15 border-amber-500/40',
+          'C': 'text-gray-300 bg-gray-500/15 border-gray-500/40',
+          'FAIL': 'text-red-400 bg-red-500/15 border-red-500/40'
+        };
+        const gCls = gradeColors[r.rank] || gradeColors['C'];
+
+        html += `
+          <div class="p-3 rounded-xl bg-[#10121b] border border-[#222638] flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold border ${gCls}">${r.rank}</span>
+                <span class="text-xs font-bold text-white">${modeLabel} · ${diffLabel}</span>
+                <span class="text-[10px] text-gray-500">${r.timestamp}</span>
+              </div>
+              <div class="text-[11px] text-gray-300 mt-1 truncate">
+                ${r.success ? `${r.seatSummary}` : `실패 (${r.failReason})`}
+              </div>
+              <div class="text-[10px] text-gray-400 mt-0.5 tabular-nums">
+                반응 ${r.reactionMs !== null ? r.reactionMs + 'ms' : '-'} · 이선좌 ${r.iseonjwaCount}회
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-sm font-extrabold tabular-nums ${r.success ? 'text-white' : 'text-red-400'}">
+                ${r.success ? r.totalActiveSec.toFixed(2) + 's' : '실패'}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      body.innerHTML = html;
+    }
+
+    /* =========================================================================
+       6. 상단 컨트롤 바 UI 동기화 & 이벤트 바인딩
+       ========================================================================= */
+    function syncSettingsUI() {
+      $$('.setting-btn').forEach((btn) => {
+        const key = btn.dataset.setting;
+        const val = btn.dataset.value;
+        const current = String(state.settings[key]);
+        if (current === val) {
+          btn.classList.add('bg-[#0074E9]', 'text-white', 'shadow-sm');
+          btn.classList.remove('text-gray-400', 'hover:text-gray-200');
+        } else {
+          btn.classList.remove('bg-[#0074E9]', 'text-white', 'shadow-sm');
+          btn.classList.add('text-gray-400', 'hover:text-gray-200');
+        }
+      });
+      $('#selectCountdown').value = String(state.settings.countdownSec);
+      $('#toggleKeypad').checked = state.settings.useKeypad;
+      $('#btnToggleSound').textContent = SoundFX.enabled ? '🔊' : '🔇';
+    }
+
+    function bindHeaderControls() {
+      // 모바일 설정 토글
+      $('#btnToggleMobileSettings').onclick = () => {
+        const panel = $('#settingsControls');
+        const arrow = $('#mobileSettingsArrow');
+        const isHidden = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !isHidden);
+        panel.classList.toggle('flex', isHidden);
+        arrow.textContent = isHidden ? '▴' : '▾';
+      };
+
+      // 세그먼트 버튼
+      $$('.setting-btn').forEach((btn) => {
+        btn.onclick = () => {
+          SoundFX.click();
+          const key = btn.dataset.setting;
+          let val = btn.dataset.value;
+          if (key === 'qty') val = Number(val);
+          state.settings[key] = val;
+          syncSettingsUI();
+          showToast('설정이 변경되어 처음 화면으로 초기화되었습니다.', 'info');
+          resetSimulation();
+        };
+      });
+
+      $('#selectCountdown').onchange = (e) => {
+        SoundFX.click();
+        state.settings.countdownSec = Number(e.target.value);
+        resetSimulation();
+      };
+
+      $('#toggleKeypad').onchange = (e) => {
+        SoundFX.click();
+        state.settings.useKeypad = e.target.checked;
+        showToast(state.settings.useKeypad ? '쿠페이 6자리 보안 키패드 활성화' : '보안 키패드 생략 (원터치 결제)', 'info');
+      };
+
+      $('#btnToggleSound').onclick = () => {
+        SoundFX.enabled = !SoundFX.enabled;
+        syncSettingsUI();
+        if (SoundFX.enabled) SoundFX.click();
+      };
+
+      $('#btnGlobalReset').onclick = () => {
+        SoundFX.click();
+        resetSimulation();
+      };
+
+      // 기록 모달
+      $('#btnOpenHistory').onclick = () => {
+        SoundFX.click();
+        renderHistoryModal();
+        $('#historyModal').classList.remove('hidden');
+      };
+      const closeHistory = () => { SoundFX.click(); $('#historyModal').classList.add('hidden'); };
+      $('#btnCloseHistory').onclick = closeHistory;
+      $('#btnCloseHistory2').onclick = closeHistory;
+      $('#btnClearHistory').onclick = () => {
+        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        SoundFX.click();
+        updateBestTimeBadge();
+        renderHistoryModal();
+        showToast('저장된 기록을 모두 삭제했습니다.', 'info');
+      };
+
+      // 키패드 닫기
+      $('#btnCloseKeypad').onclick = () => {
+        SoundFX.click();
+        $('#keypadOverlay').classList.add('hidden');
+      };
+
+      // F5 키 가로채기 (Step 3 좌석 선택 중 새로고침 연습)
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'F5' && state.step === 3) {
+          e.preventDefault();
+          handleSeatRefresh();
+        }
+      });
+    }
+
+    /* =========================================================================
+       7. 시뮬레이션 초기화 & 단계 전환 관리
+       ========================================================================= */
+    function resetSimulation(autoStartCountdown = false) {
+      clearAllTimers();
+      $('#modalOverlay').classList.add('hidden');
+      $('#keypadOverlay').classList.add('hidden');
+
+      state.step = 0;
+      state.countdownRunning = false;
+      state.isTicketOpen = false;
+      state.falseStarts = 0;
+      state.selectedSessionId = null;
+      state.agreedIdentity = false;
+      state.selectedSeats = [];
+      state.activeZoneId = null;
+      state.seatMode = 'direct';
+      state.holdRemainingSec = 480;
+      state.iseonjwaCount = 0;
+      state.cancelDropCount = 0;
+      state.agreedPaymentTerms = false;
+      state.paymentMethod = 'coupay';
+      state.pinInput = '';
+
+      state.metrics = {
+        reactionMs: null,
+        step1Start: 0,
+        step1Duration: 0,
+        queueDuration: 0,
+        step3Start: 0,
+        step3Duration: 0,
+        step4Start: 0,
+        step4Duration: 0,
+        totalActiveSec: 0,
+        resultSuccess: false,
+        failReason: ''
+      };
+
+      renderStep0();
+      if (autoStartCountdown) {
+        startStep0Countdown();
+      }
+    }
+
+    function setHeader({ title, showBack = false, onBack = null, rightHtml = '', progressPct = 16 }) {
+      $('#appHeaderTitle').textContent = title;
+      const backBtn = $('#btnAppBack');
+      backBtn.classList.toggle('hidden', !showBack);
+      backBtn.onclick = onBack;
+      $('#appHeaderRight').innerHTML = rightHtml;
+      $('#stepProgressFill').style.width = `${progressPct}%`;
+    }
+
+    /* =========================================================================
+       8. STEP 0: 공연 상세 & 오픈 카운트다운 (서버시간 밀리초 시계)
+       ========================================================================= */
+    function renderStep0() {
+      state.step = 0;
+      const diff = DIFFICULTY_CFG[state.settings.difficulty];
+      const isCancelMode = state.settings.mode === 'cancel';
+
+      setHeader({
+        title: '쿠팡플레이 티켓',
+        showBack: false,
+        progressPct: 16,
+        rightHtml: `
+          <span class="px-2 py-0.5 rounded-md text-[11px] font-bold border ${diff.badgeClass}">${diff.label}</span>
+          <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#1c2030] text-gray-300 border border-[#2c3147]">${state.settings.qty}매</span>
+        `
+      });
+
+      const content = $('#appContent');
+      content.scrollTop = 0;
+      content.innerHTML = `
+        <div class="step-enter pb-6">
+          <!-- 대형 콘서트 포스터 히어로 배너 (인라인 SVG 아트) -->
+          <div class="relative w-full h-56 overflow-hidden bg-gradient-to-br from-[#0b1026] via-[#131b3a] to-[#080a12]">
+            <svg class="absolute inset-0 w-full h-full opacity-90" viewBox="0 0 430 224" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <radialGradient id="spot1" cx="50%" cy="15%" r="70%">
+                  <stop offset="0%" stop-color="#00A8FF" stop-opacity="0.55"/>
+                  <stop offset="55%" stop-color="#4f46e5" stop-opacity="0.18"/>
+                  <stop offset="100%" stop-color="#0b0c10" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="spot2" cx="85%" cy="75%" r="55%">
+                  <stop offset="0%" stop-color="#a855f7" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#0b0c10" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <rect width="430" height="224" fill="url(#spot1)" />
+              <rect width="430" height="224" fill="url(#spot2)" />
+              <!-- 콘서트 무대 라이트 빔 -->
+              <polygon points="215,0 60,224 140,224" fill="#00A8FF" fill-opacity="0.08" />
+              <polygon points="215,0 290,224 370,224" fill="#a855f7" fill-opacity="0.08" />
+              <polygon points="215,0 165,224 265,224" fill="#ffffff" fill-opacity="0.06" />
+              <!-- 아레나 아크 라인 -->
+              <ellipse cx="215" cy="215" rx="180" ry="38" fill="none" stroke="#00A8FF" stroke-opacity="0.28" stroke-width="1.5" />
+              <ellipse cx="215" cy="215" rx="125" ry="22" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="1" />
+            </svg>
+
+            <div class="relative z-10 h-full p-5 flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-1 rounded-full bg-[#0074E9]/90 text-white text-[11px] font-extrabold tracking-wide shadow-lg">
+                  WOW 회원 단독 예매
+                </span>
+                <span class="px-2.5 py-1 rounded-full bg-black/50 backdrop-blur border border-white/15 text-[11px] font-bold text-sky-300">
+                  ${isCancelMode ? '⚡ 취켓팅 실전 모드' : '🎯 정규 티켓팅 모드'}
+                </span>
+              </div>
+
+              <div>
+                <p class="text-[11px] font-bold tracking-[0.2em] text-[#00A8FF] uppercase mb-1">${CONCERT_INFO.subtitle}</p>
+                <h2 class="text-2xl font-black text-white tracking-tight leading-tight drop-shadow">${CONCERT_INFO.title}</h2>
+                <p class="text-xs text-gray-300 mt-1.5 flex items-center gap-1.5">
+                  <span>📍 ${CONCERT_INFO.venue}</span>
+                </p>
+              </div>
+            </div>
+            <div class="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0b0c10] to-transparent"></div>
+          </div>
+
+          <div class="px-4 -mt-1 space-y-3.5">
+            <!-- 실시간 밀리초 서버 시계 & 오픈 카운트다운 카드 -->
+            <div class="p-4 rounded-2xl bg-[#161822] border border-[#262a3d] shadow-lg">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-gray-400 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  쿠팡플레이 서버 시간
+                </span>
+                <span id="falseStartBadge" class="hidden text-[11px] font-bold text-red-400 bg-red-500/15 px-2 py-0.5 rounded-md">부정출발 0회</span>
+              </div>
+
+              <div id="serverClockDisplay" class="text-2xl font-black font-mono tabular-nums text-white tracking-tight">
+                00:00:00.000
+              </div>
+
+              <div class="mt-3 pt-3 border-t border-[#24283a] flex items-center justify-between">
+                <div>
+                  <div class="text-[11px] text-gray-400">${isCancelMode ? '취소표 모니터링 입장' : '티켓 오픈까지 남은 시간'}</div>
+                  <div id="countdownDisplay" class="text-xl font-black font-mono tabular-nums text-[#00A8FF] mt-0.5">
+                    ${isCancelMode ? '즉시 시작 가능' : `00:${pad2(state.settings.countdownSec)}.000`}
+                  </div>
+                </div>
+                <div id="countdownActionSlot">
+                  ${isCancelMode ? '' : `
+                    <button id="btnStartCountdown" class="btn-press px-3.5 py-2 rounded-xl bg-[#00A8FF]/15 hover:bg-[#00A8FF]/25 border border-[#00A8FF]/40 text-[#00A8FF] text-xs font-bold transition">
+                      ▶ ${state.settings.countdownSec}초 카운트 시작
+                    </button>
+                  `}
+                </div>
+              </div>
+            </div>
+
+            <!-- 모드별 실전 팁 카드 -->
+            <div class="p-3.5 rounded-2xl bg-[#12141e] border border-[#202436] text-xs text-gray-300 leading-relaxed">
+              ${isCancelMode
+                ? `<div class="font-bold text-sky-300 mb-1">⚡ 취켓팅(취소표 잡기) 모드 안내</div>
+                   전석 매진 상태에서 1~3초마다 랜덤 구역에 취소표가 1~2석씩 깜빡이며 풀립니다. <span class="text-white font-semibold">푸른빛으로 빛나는 구역</span>을 빠르게 눌러 사라지기 전에 좌석을 선점하세요!`
+                : `<div class="font-bold text-sky-300 mb-1">🎯 정규 티켓팅 실전 팁</div>
+                   위 <span class="text-white font-semibold">'카운트 시작'</span> 버튼을 누른 뒤 정각(<span class="font-mono text-[#00A8FF]">00.000초</span>)에 하단 버튼이 파란색으로 바뀌는 순간 클릭하세요. 정각 이전 클릭은 부정 출발로 기록됩니다.`
+              }
+            </div>
+
+            <!-- 공연 기본 정보 & 좌석 가격표 -->
+            <div class="p-4 rounded-2xl bg-[#161822] border border-[#252836] space-y-3">
+              <h3 class="text-sm font-bold text-white">공연 및 티켓 가격 정보</h3>
+              <div class="grid grid-cols-2 gap-y-2 text-xs">
+                <span class="text-gray-400">공연 일시</span>
+                <span class="text-gray-200 font-medium text-right">${CONCERT_INFO.dateRange}</span>
+                <span class="text-gray-400">공연 장소</span>
+                <span class="text-gray-200 font-medium text-right">${CONCERT_INFO.venueShort}</span>
+                <span class="text-gray-400">관람 시간</span>
+                <span class="text-gray-200 font-medium text-right">${CONCERT_INFO.runningTime}</span>
+                <span class="text-gray-400">예매 제한</span>
+                <span class="text-gray-200 font-medium text-right">1인 최대 ${state.settings.qty}매 (연습 설정)</span>
+              </div>
+
+              <div class="pt-2.5 border-t border-[#24283a] space-y-1.5">
+                ${Object.entries(CONCERT_INFO.grades).map(([k, g]) => `
+                  <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2.5 h-2.5 rounded-sm" style="background:${g.color}"></span>
+                      <span class="text-gray-200 font-medium">${g.name}</span>
+                    </div>
+                    <span class="font-bold text-white tabular-nums">${formatMoney(g.price)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 하단 고정 CTA 버튼 렌더링
+      renderStep0Footer();
+
+      // 카운트 시작 버튼 바인딩
+      const startBtn = $('#btnStartCountdown');
+      if (startBtn) {
+        startBtn.onclick = () => {
+          SoundFX.click();
+          startStep0Countdown();
+        };
+      }
+
+      // 서버 시계 루프 시작
+      startServerClockLoop();
+    }
+
+    function renderStep0Footer() {
+      const footer = $('#appFooter');
+      const isCancelMode = state.settings.mode === 'cancel';
+
+      if (isCancelMode) {
+        footer.innerHTML = `
+          <button id="btnStep0Main" class="btn-press w-full py-3.5 rounded-xl bg-gradient-to-r from-[#0074E9] to-[#00A8FF] hover:brightness-110 text-white font-extrabold text-[15px] shadow-lg shadow-sky-500/25 transition">
+            ⚡ 취켓팅 좌석맵 바로 입장하기
+          </button>
+        `;
+        $('#btnStep0Main').onclick = () => {
+          SoundFX.open();
+          // 취켓팅 모드는 임의 2회차 자동 선택 후 곧바로 Step 3 진입
+          state.selectedSessionId = CONCERT_INFO.sessions[1].id;
+          state.metrics.reactionMs = null;
+          state.metrics.step1Duration = 0;
+          state.metrics.queueDuration = 0;
+          enterStep3SeatSelection();
+        };
+        return;
+      }
+
+      if (!state.countdownRunning && !state.isTicketOpen) {
+        footer.innerHTML = `
+          <button id="btnStep0Main" class="btn-press w-full py-3.5 rounded-xl bg-[#0074E9] hover:bg-[#0088ff] text-white font-extrabold text-[15px] shadow-lg shadow-sky-500/20 transition">
+            티켓 오픈 카운트다운 시작 (${state.settings.countdownSec}초)
+          </button>
+        `;
+        $('#btnStep0Main').onclick = () => {
+          SoundFX.click();
+          startStep0Countdown();
+        };
+      } else if (state.countdownRunning && !state.isTicketOpen) {
+        footer.innerHTML = `
+          <button id="btnStep0Main" class="w-full py-3.5 rounded-xl bg-[#242838] border border-[#32384f] text-gray-400 font-bold text-[15px] cursor-pointer transition">
+            티켓 오픈 대기중...
+          </button>
+        `;
+        $('#btnStep0Main').onclick = () => {
+          // 정각 전 클릭 -> 부정 출발
+          state.falseStarts += 1;
+          SoundFX.error();
+          const badge = $('#falseStartBadge');
+          if (badge) {
+            badge.classList.remove('hidden');
+            badge.textContent = `부정출발 ${state.falseStarts}회`;
+          }
+          showToast('아직 티켓 오픈 시간이 아닙니다! (부정 출발)', 'error');
+        };
+      } else {
+        // 정각 오픈 완료!
+        footer.innerHTML = `
+          <button id="btnStep0Main" class="btn-press w-full py-3.5 rounded-xl bg-gradient-to-r from-[#0074E9] to-[#00A8FF] text-white font-extrabold text-[16px] shadow-xl shadow-sky-500/40 ring-2 ring-sky-300/60 transition">
+            티켓 구매하기
+          </button>
+        `;
+        $('#btnStep0Main').onclick = () => {
+          const reactionMs = Math.max(1, Math.round(performance.now() - state.openTargetPerf));
+          state.metrics.reactionMs = reactionMs;
+          SoundFX.click();
+          clearAllTimers();
+          showToast(`정각 반응속도: ${reactionMs}ms!`, reactionMs <= 250 ? 'success' : 'info');
+          enterStep1SessionSelect();
+        };
+      }
+    }
+
+    function startStep0Countdown() {
+      state.countdownRunning = true;
+      state.isTicketOpen = false;
+      state.falseStarts = 0;
+      const durMs = state.settings.countdownSec * 1000;
+      state.openTargetPerf = performance.now() + durMs;
+      state.openTargetDateMs = Date.now() + durMs;
+      state._lastBeepSec = state.settings.countdownSec + 1;
+
+      const slot = $('#countdownActionSlot');
+      if (slot) {
+        slot.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold animate-pulse">오픈 임박</span>`;
+      }
+      renderStep0Footer();
+    }
+
+    function startServerClockLoop() {
+      if (state.timers.clockRaf) cancelAnimationFrame(state.timers.clockRaf);
+
+      const loop = () => {
+        if (state.step !== 0) return;
+
+        const nowDate = new Date();
+        const clockEl = $('#serverClockDisplay');
+        if (clockEl) clockEl.textContent = formatClockMs(nowDate);
+
+        if (state.countdownRunning && !state.isTicketOpen) {
+          const remainMs = state.openTargetPerf - performance.now();
+          const cdEl = $('#countdownDisplay');
+
+          if (remainMs <= 0) {
+            state.isTicketOpen = true;
+            state.countdownRunning = false;
+            if (cdEl) {
+              cdEl.textContent = '00:00.000 OPEN!';
+              cdEl.classList.remove('text-[#00A8FF]', 'text-amber-400');
+              cdEl.classList.add('text-emerald-400');
+            }
+            const slot = $('#countdownActionSlot');
+            if (slot) {
+              slot.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold">NOW OPEN</span>`;
+            }
+            SoundFX.open();
+            renderStep0Footer();
+          } else {
+            const sec = Math.floor(remainMs / 1000);
+            const ms = Math.floor(remainMs % 1000);
+            if (cdEl) {
+              cdEl.textContent = `00:${pad2(sec)}.${pad3(ms)}`;
+              if (remainMs <= 3000) {
+                cdEl.classList.remove('text-[#00A8FF]');
+                cdEl.classList.add('text-amber-400');
+              }
+            }
+            // 마지막 3초 카운트 틱 효과음
+            if (sec < 3 && sec !== state._lastBeepSec) {
+              state._lastBeepSec = sec;
+              SoundFX.tick();
+            }
+          }
+        }
+
+        state.timers.clockRaf = requestAnimationFrame(loop);
+      };
+      state.timers.clockRaf = requestAnimationFrame(loop);
+    }
+
+    /* =========================================================================
+       9. STEP 1: 회차 선택 & 예매자 본인 확인 동의
+       ========================================================================= */
+    function enterStep1SessionSelect() {
+      state.step = 1;
+      state.metrics.step1Start = performance.now();
+      state.selectedSessionId = null;
+      state.agreedIdentity = false;
+
+      setHeader({
+        title: '회차 선택 및 본인 확인',
+        showBack: true,
+        onBack: () => { SoundFX.click(); resetSimulation(); },
+        progressPct: 32,
+        rightHtml: state.metrics.reactionMs !== null
+          ? `<span class="text-[11px] font-mono font-bold text-[#00A8FF] bg-[#00A8FF]/10 px-2 py-0.5 rounded-md">${state.metrics.reactionMs}ms</span>`
+          : ''
+      });
+
+      const content = $('#appContent');
+      content.scrollTop = 0;
+      content.innerHTML = `
+        <div class="p-4 space-y-5 step-enter">
+          <div>
+            <div class="text-xs font-bold text-[#00A8FF] mb-1">STEP 1</div>
+            <h2 class="text-lg font-extrabold text-white">관람하실 회차를 선택해주세요</h2>
+            <p class="text-xs text-gray-400 mt-1">${CONCERT_INFO.title} · ${CONCERT_INFO.venue}</p>
+          </div>
+
+          <!-- 3개 회차 카드 -->
+          <div class="space-y-2.5" id="sessionCardList">
+            ${CONCERT_INFO.sessions.map((s) => `
+              <button data-session-id="${s.id}" class="session-card btn-press w-full text-left p-4 rounded-2xl bg-[#161822] border-2 border-[#252836] hover:border-[#3b4260] transition flex items-center justify-between">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-extrabold text-white">${s.dateLabel}</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#222638] text-sky-300">${s.dayTag}</span>
+                  </div>
+                  <div class="text-xs text-gray-400 mt-1">공연 시작 ${s.timeLabel} · 예매가능</div>
+                </div>
+                <div class="session-radio w-5 h-5 rounded-full border-2 border-gray-500 flex items-center justify-center">
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#00A8FF] hidden"></div>
+                </div>
+              </button>
+            `).join('')}
+          </div>
+
+          <!-- 쿠팡플레이 본인 명의 확인 및 부정예매 방지 동의 -->
+          <div class="p-4 rounded-2xl bg-[#13151f] border border-[#262a3d] space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🛡️</span>
+              <h3 class="text-sm font-bold text-white">예매자 본인 명의 확인 및 유의사항</h3>
+            </div>
+            <ul class="text-[11px] text-gray-400 space-y-1.5 list-disc pl-4 leading-relaxed">
+              <li>본 공연은 <strong class="text-gray-200">쿠팡 와우 회원 본인 명의</strong>로만 입장 가능하며, 현장 신분증 대조가 진행됩니다.</li>
+              <li>매크로 등 부정한 방법을 통한 예매 및 프리미엄 거래(암표) 적발 시 사전 통보 없이 예매가 취소됩니다.</li>
+              <li>모바일 티켓은 쿠팡플레이 앱을 통해서만 발급되며 캡처 이미지는 입장이 불가합니다.</li>
+            </ul>
+
+            <label id="identityAgreeLabel" class="mt-2 flex items-center gap-3 p-3 rounded-xl bg-[#1a1d2b] border border-[#2c3148] cursor-pointer hover:border-[#00A8FF]/60 transition">
+              <input type="checkbox" id="chkIdentityAgree" class="w-5 h-5 accent-[#00A8FF] rounded cursor-pointer shrink-0" />
+              <span class="text-xs font-bold text-white leading-snug">
+                [필수] 예매자 본인 명의(홍길동) 확인 및 부정예매 방지 유의사항에 모두 동의합니다.
+              </span>
+            </label>
+          </div>
+        </div>
+      `;
+
+      // 회차 선택 이벤트
+      $$('.session-card').forEach((card) => {
+        card.onclick = () => {
+          SoundFX.click();
+          state.selectedSessionId = card.dataset.sessionId;
+          $$('.session-card').forEach((c) => {
+            const isSel = c.dataset.sessionId === state.selectedSessionId;
+            c.classList.toggle('border-[#00A8FF]', isSel);
+            c.classList.toggle('bg-[#00A8FF]/10', isSel);
+            c.classList.toggle('border-[#252836]', !isSel);
+            const dot = c.querySelector('.session-radio div');
+            const ring = c.querySelector('.session-radio');
+            dot.classList.toggle('hidden', !isSel);
+            ring.classList.toggle('border-[#00A8FF]', isSel);
+          });
+          updateStep1Footer();
+        };
+      });
+
+      $('#chkIdentityAgree').onchange = (e) => {
+        SoundFX.click();
+        state.agreedIdentity = e.target.checked;
+        updateStep1Footer();
+      };
+
+      updateStep1Footer();
+    }
+
+    function updateStep1Footer() {
+      const ready = Boolean(state.selectedSessionId && state.agreedIdentity);
+      $('#appFooter').innerHTML = `
+        <button id="btnStep1Next" ${ready ? '' : 'disabled'} class="btn-press w-full py-3.5 rounded-xl font-extrabold text-[15px] transition ${
+          ready
+            ? 'bg-gradient-to-r from-[#0074E9] to-[#00A8FF] text-white shadow-lg shadow-sky-500/25'
+            : 'bg-[#1e2130] text-gray-500 cursor-not-allowed'
+        }">
+          이름 확인 및 구매 시작
+        </button>
+      `;
+      if (ready) {
+        $('#btnStep1Next').onclick = () => {
+          SoundFX.click();
+          state.metrics.step1Duration = (performance.now() - state.metrics.step1Start) / 1000;
+          enterStep2Queue();
+        };
+      }
+    }
+
+    /* =========================================================================
+       10. STEP 2: 가상 대기열 (반응속도 & 난이도 비례 순번 배정)
+       ========================================================================= */
+    function enterStep2Queue() {
+      state.step = 2;
+      const queueStartPerf = performance.now();
+      const diff = DIFFICULTY_CFG[state.settings.difficulty];
+      const react = state.metrics.reactionMs || 350;
+
+      // 정각 반응속도와 난이도에 비례한 대기 순번 계산
+      let baseQueue = 300;
+      if (react <= 180) baseQueue = randInt(120, 390);
+      else if (react <= 350) baseQueue = randInt(450, 1850);
+      else if (react <= 650) baseQueue = randInt(2200, 6800);
+      else if (react <= 1200) baseQueue = randInt(7500, 16500);
+      else baseQueue = randInt(17000, 36000);
+
+      state.queueInitial = Math.max(45, Math.round(baseQueue * diff.queueMult));
+      state.queueCurrent = state.queueInitial;
+
+      setHeader({
+        title: '접속 대기 안내',
+        showBack: false,
+        progressPct: 50,
+        rightHtml: `<span class="text-[11px] font-bold text-amber-300 animate-pulse">대기중</span>`
+      });
+
+      const content = $('#appContent');
+      content.scrollTop = 0;
+      content.innerHTML = `
+        <div class="h-full flex flex-col items-center justify-center px-6 py-10 text-center step-enter">
+          <!-- 로딩 링 애니메이션 -->
+          <div class="relative w-20 h-20 mb-6 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full border-4 border-[#1f2436]"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-t-[#00A8FF] border-r-[#0074E9] animate-spin"></div>
+            <span class="text-2xl">🎟️</span>
+          </div>
+
+          <h2 class="text-lg font-extrabold text-white">예매 페이지 접속 대기중입니다</h2>
+          <p class="text-xs text-gray-400 mt-1.5">
+            정각 반응속도 <span class="text-[#00A8FF] font-bold font-mono">${react}ms</span> 기준으로 순번이 배정되었습니다.
+          </p>
+
+          <!-- 대기 순번 카드 -->
+          <div class="w-full mt-6 p-5 rounded-2xl bg-[#161822] border border-[#262a3d] shadow-xl">
+            <div class="text-xs text-gray-400">나의 대기 순서</div>
+            <div id="queueNumberDisplay" class="text-4xl font-black text-[#00A8FF] tabular-nums mt-1 tracking-tight">
+              ${state.queueCurrent.toLocaleString()}
+            </div>
+            <div class="text-[11px] text-gray-400 mt-1">
+              앞에 <span id="queueAheadText" class="text-white font-semibold tabular-nums">${state.queueCurrent.toLocaleString()}</span>명이 대기하고 있습니다
+            </div>
+
+            <!-- 프로그레스 바 -->
+            <div class="w-full h-2.5 bg-[#0b0c10] rounded-full overflow-hidden mt-5 border border-[#24283a]">
+              <div id="queueProgressBar" class="h-full bg-gradient-to-r from-[#0074E9] to-[#00A8FF] transition-all duration-100 rounded-full" style="width: 3%"></div>
+            </div>
+            <div class="flex justify-between text-[11px] text-gray-400 mt-2 tabular-nums">
+              <span id="queuePctText">3%</span>
+              <span id="queueEtaText">예상 대기 약 3초</span>
+            </div>
+          </div>
+
+          <!-- 주의 문구 -->
+          <div class="w-full mt-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-left flex items-start gap-2.5">
+            <span class="text-amber-400 text-sm shrink-0">⚠️</span>
+            <p class="text-[11px] text-amber-200/90 leading-relaxed">
+              <strong>새로고침하거나 뒤로가기를 누르지 마세요.</strong><br/>
+              창을 닫거나 새로고침할 경우 대기 순번이 초기화되어 다시 대기해야 합니다.
+            </p>
+          </div>
+        </div>
+      `;
+
+      $('#appFooter').innerHTML = `
+        <button disabled class="w-full py-3.5 rounded-xl bg-[#1a1d2a] text-gray-500 font-bold text-sm cursor-not-allowed">
+          순서가 되면 자동으로 좌석 선택 화면으로 이동합니다...
+        </button>
+      `;
+
+      // 연습 효율을 위해 2.2 ~ 3.6초 사이에 부드럽게 가속 통과
+      const totalSimDurationMs = Math.min(3600, Math.max(2000, 1800 + Math.min(1800, state.queueInitial * 0.08)));
+      const tickMs = 50;
+      const startTime = performance.now();
+
+      state.timers.queueInterval = setInterval(() => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(1, elapsed / totalSimDurationMs);
+        // 초반 느리다가 후반 가속 이징
+        const eased = 1 - Math.pow(1 - progress, 2.2);
+        state.queueCurrent = Math.max(0, Math.round(state.queueInitial * (1 - eased)));
+
+        const numEl = $('#queueNumberDisplay');
+        const aheadEl = $('#queueAheadText');
+        const barEl = $('#queueProgressBar');
+        const pctEl = $('#queuePctText');
+        const etaEl = $('#queueEtaText');
+
+        const pct = Math.max(3, Math.round(eased * 100));
+        if (numEl) numEl.textContent = state.queueCurrent.toLocaleString();
+        if (aheadEl) aheadEl.textContent = state.queueCurrent.toLocaleString();
+        if (barEl) barEl.style.width = `${pct}%`;
+        if (pctEl) pctEl.textContent = `${pct}%`;
+        if (etaEl) {
+          const remainSec = Math.max(0.1, (totalSimDurationMs - elapsed) / 1000);
+          etaEl.textContent = `예상 대기 약 ${remainSec.toFixed(1)}초`;
+        }
+
+        if (progress >= 1) {
+          clearInterval(state.timers.queueInterval);
+          state.timers.queueInterval = null;
+          state.metrics.queueDuration = (performance.now() - queueStartPerf) / 1000;
+          SoundFX.open();
+          enterStep3SeatSelection();
+        }
+      }, tickMs);
+    }
+
+    /* =========================================================================
+       11. STEP 3: 좌석 등급/구역 선택 및 세부 좌석 배치도 (8분 선점 + 이선좌 + 취켓팅)
+       ========================================================================= */
+    function initSeatsData() {
+      const isCancel = state.settings.mode === 'cancel';
+      const diff = DIFFICULTY_CFG[state.settings.difficulty];
+      // 대기 순번이 늦을수록 초기 매진율 소폭 상승
+      const queuePenalty = isCancel ? 0 : Math.min(0.20, (state.queueInitial / 30000) * 0.20);
+      const baseSoldProb = Math.min(0.92, diff.initialSoldRatio + queuePenalty);
+
+      state.seatsByZone = {};
+      CONCERT_INFO.zones.forEach((zone) => {
+        const seats = [];
+        // 1층 플로어(VIP)나 중앙 구역일수록 경쟁이 더 치열
+        const isCenter = zone.id === 'A2' || zone.id === 'B2' || zone.id === 'B3';
+        const zoneBias = (zone.grade === 'VIP' ? 0.10 : zone.grade === 'R' ? 0.02 : -0.08) + (isCenter ? 0.04 : 0);
+        const zoneSoldProb = isCancel ? 1.0 : Math.min(0.95, Math.max(0.1, baseSoldProb + zoneBias));
+
+        for (let r = 1; r <= zone.rows; r++) {
+          for (let c = 1; c <= zone.cols; c++) {
+            const isSold = isCancel ? true : Math.random() < zoneSoldProb;
+            seats.push({
+              id: `${zone.id}-${r}-${c}`,
+              row: r,
+              col: c,
+              status: isSold ? 'sold' : 'available'
+            });
+          }
+        }
+        state.seatsByZone[zone.id] = seats;
+      });
+
+      // 정규 모드에서 최소한의 잔여석은 보장 (초기 진입 시 0석 방지)
+      if (!isCancel && getTotalAvailableCount() < state.settings.qty + 3) {
+        const fallbackZoneId = CONCERT_INFO.zones[CONCERT_INFO.zones.length - 1].id;
+        const fallbackZone = state.seatsByZone[fallbackZoneId];
+        for (let i = 0; i < 8 && i < fallbackZone.length; i++) {
+          fallbackZone[i].status = 'available';
+        }
+      }
+    }
+
+    function getZoneAvailableCount(zoneId) {
+      const list = state.seatsByZone[zoneId] || [];
+      return list.filter((s) => s.status !== 'sold').length;
+    }
+
+    function getTotalAvailableCount() {
+      return CONCERT_INFO.zones.reduce((sum, z) => sum + getZoneAvailableCount(z.id), 0);
+    }
+
+    function enterStep3SeatSelection() {
+      state.step = 3;
+      state.metrics.step3Start = performance.now();
+      state.selectedSeats = [];
+      state.activeZoneId = null;
+      state.holdRemainingSec = 480;
+      initSeatsData();
+
+      renderStep3Layout();
+      startStep3Timers();
+
+      if (state.settings.mode === 'cancel') {
+        showToast('전석 매진 상태입니다. 잠시 후 취소표가 랜덤 구역에 뜹니다!', 'cancel');
+      }
+    }
+
+    function startStep3Timers() {
+      const diff = DIFFICULTY_CFG[state.settings.difficulty];
+
+      // 1) 8분 선점 카운트다운 타이머
+      state.timers.holdInterval = setInterval(() => {
+        state.holdRemainingSec -= 1;
+        const timerEl = $('#holdTimerDisplay');
+        if (timerEl) {
+          timerEl.textContent = formatMinSec(state.holdRemainingSec);
+          if (state.holdRemainingSec <= 60) {
+            timerEl.classList.add('text-red-400', 'animate-pulse');
+          }
+        }
+        if (state.holdRemainingSec <= 0) {
+          finishWithFailure('좌석 선점 시간(8분)이 초과되었습니다.');
+        }
+      }, 1000);
+
+      // 2) 모드별 실시간 좌석 변동 엔진
+      if (state.settings.mode === 'regular') {
+        state.timers.drainInterval = setInterval(() => {
+          drainRandomSeats(diff.drainBatch[0], diff.drainBatch[1]);
+        }, diff.drainIntervalMs);
+      } else {
+        scheduleNextCancelDrop();
+      }
+    }
+
+    function drainRandomSeats(minCount, maxCount) {
+      if (state.step !== 3) return;
+      const availablePool = [];
+      CONCERT_INFO.zones.forEach((z) => {
+        const weight = z.grade === 'VIP' ? 3 : z.grade === 'R' ? 2 : 1;
+        state.seatsByZone[z.id].forEach((seat) => {
+          if (seat.status === 'available') {
+            for (let w = 0; w < weight; w++) {
+              availablePool.push({ zoneId: z.id, seat });
+            }
+          }
+        });
+      });
+
+      if (availablePool.length === 0) {
+        if (state.selectedSeats.length < state.settings.qty) {
+          finishWithFailure('모든 구역이 전석 매진되었습니다.');
+        }
+        return;
+      }
+
+      const count = randInt(minCount, maxCount);
+      let stolenSelected = false;
+
+      for (let i = 0; i < count; i++) {
+        if (availablePool.length === 0) break;
+        const pickIdx = Math.floor(Math.random() * availablePool.length);
+        const picked = availablePool[pickIdx];
+        if (picked.seat.status === 'sold') continue;
+
+        // 사용자가 현재 클릭해둔 좌석도 낮은 확률로 뺏길 수 있음 (지옥 모드 체감 UP)
+        const isUserSelected = state.selectedSeats.some((s) => s.seatId === picked.seat.id);
+        if (isUserSelected) {
+          if (Math.random() < 0.35) {
+            picked.seat.status = 'sold';
+            state.selectedSeats = state.selectedSeats.filter((s) => s.seatId !== picked.seat.id);
+            stolenSelected = true;
+          }
+        } else {
+          picked.seat.status = 'sold';
+        }
+      }
+
+      if (stolenSelected) {
+        state.iseonjwaCount += 1;
+        SoundFX.error();
+        showToast('선택하신 좌석이 다른 예매자에게 선점되었습니다! (이선좌)', 'error');
+      }
+
+      updateStep3DynamicUI();
+
+      // 정규 모드 전체 매진 체크
+      if (getTotalAvailableCount() === 0 && state.selectedSeats.length === 0) {
+        finishWithFailure('아쉽게도 전석 매진되었습니다.');
+      }
+    }
+
+    // 취켓팅 모드: 1~3초 간격으로 랜덤 구역에 취소표 1~2석(또는 연석) 발생
+    function scheduleNextCancelDrop() {
+      if (state.step !== 3 || state.settings.mode !== 'cancel') return;
+      const diff = DIFFICULTY_CFG[state.settings.difficulty];
+      const delay = randInt(diff.cancelIntervalMs[0], diff.cancelIntervalMs[1]);
+
+      state.timers.cancelTimeout = setTimeout(() => {
+        if (state.step !== 3) return;
+        spawnCancellationTicket();
+        scheduleNextCancelDrop();
+      }, delay);
+    }
+
+    function spawnCancellationTicket() {
+      const diff = DIFFICULTY_CFG[state.settings.difficulty];
+      const zone = CONCERT_INFO.zones[randInt(0, CONCERT_INFO.zones.length - 1)];
+      const seats = state.seatsByZone[zone.id];
+      const dropQty = state.settings.qty === 2 ? 2 : randInt(1, 2);
+
+      // 연석 위주로 취소표 생성
+      const soldIndices = [];
+      for (let i = 0; i < seats.length; i++) {
+        if (seats[i].status === 'sold') soldIndices.push(i);
+      }
+      if (soldIndices.length === 0) return;
+
+      const startIdx = soldIndices[randInt(0, soldIndices.length - 1)];
+      const droppedSeats = [];
+
+      for (let offset = 0; offset < dropQty; offset++) {
+        const s = seats[startIdx + offset];
+        if (s && s.status === 'sold' && s.row === seats[startIdx].row) {
+          s.status = 'cancel_hot';
+          droppedSeats.push(s);
+        }
+      }
+
+      if (droppedSeats.length === 0) return;
+      state.cancelDropCount += 1;
+      SoundFX.cancelDrop();
+      showToast(`⚡ 취소표 발생! [${zone.name}] ${droppedSeats.length}석`, 'cancel');
+      updateStep3DynamicUI();
+
+      // 일정 시간 후 다른 경쟁자가 낚아채감 (금방 사라짐)
+      const holdMs = randInt(diff.cancelHoldMs[0], diff.cancelHoldMs[1]);
+      const expireTimer = setTimeout(() => {
+        if (state.step !== 3) return;
+        let disappeared = false;
+        droppedSeats.forEach((s) => {
+          if (s.status === 'cancel_hot') {
+            s.status = 'sold';
+            const wasSelected = state.selectedSeats.some((sel) => sel.seatId === s.id);
+            if (wasSelected) {
+              state.selectedSeats = state.selectedSeats.filter((sel) => sel.seatId !== s.id);
+              state.iseonjwaCount += 1;
+              SoundFX.error();
+              showToast('취소표가 방금 매진되었습니다! (이선좌)', 'error');
+            }
+            disappeared = true;
+          }
+        });
+        if (disappeared) updateStep3DynamicUI();
+      }, holdMs);
+      state.timers.cancelExpireTimeouts.push(expireTimer);
+    }
+
+    function handleSeatRefresh() {
+      SoundFX.click();
+      const btn = $('#btnRefreshSeats');
+      if (btn) {
+        btn.classList.add('animate-spin');
+        setTimeout(() => btn.classList.remove('animate-spin'), 320);
+      }
+      if (state.settings.mode === 'cancel' && Math.random() < 0.35) {
+        spawnCancellationTicket();
+      } else {
+        updateStep3DynamicUI();
+        showToast('좌석 잔여 현황을 재조회했습니다.', 'info');
+      }
+    }
+
+    function renderStep3Layout() {
+      setHeader({
+        title: '좌석 선택',
+        showBack: true,
+        onBack: () => {
+          SoundFX.click();
+          if (state.activeZoneId) {
+            state.activeZoneId = null;
+            renderStep3Body();
+          } else {
+            resetSimulation();
+          }
+        },
+        progressPct: 68,
+        rightHtml: `
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#191d2b] border border-[#2a3046]">
+            <span class="text-[10px] text-gray-400">남은시간</span>
+            <span id="holdTimerDisplay" class="text-xs font-extrabold font-mono tabular-nums text-[#00A8FF]">${formatMinSec(state.holdRemainingSec)}</span>
+          </div>
+          <button id="btnRefreshSeats" title="좌석 새로고침 (F5)" class="btn-press w-8 h-8 rounded-lg bg-[#191d2b] hover:bg-[#252b40] border border-[#2a3046] flex items-center justify-center text-gray-200 text-sm transition">
+            ↻
+          </button>
+        `
+      });
+
+      $('#btnRefreshSeats').onclick = handleSeatRefresh;
+      renderStep3Body();
+      renderStep3Footer();
+    }
+
+    function renderStep3Body() {
+      const content = $('#appContent');
+      const isDirect = state.seatMode === 'direct';
+      const session = CONCERT_INFO.sessions.find((s) => s.id === state.selectedSessionId) || CONCERT_INFO.sessions[0];
+
+      content.innerHTML = `
+        <div class="p-3.5 space-y-3 step-enter">
+          <!-- 상단 요약 바 + 선택 방식 탭 -->
+          <div class="flex items-center justify-between gap-2 bg-[#141620] px-3 py-2.5 rounded-xl border border-[#232738]">
+            <div class="min-w-0">
+              <div class="text-[11px] text-gray-200 truncate">
+                <span class="font-bold text-white">${session.dateLabel}</span> ${session.timeLabel}
+              </div>
+              <div class="text-[10px] text-gray-400 truncate mt-0.5">📍 ${CONCERT_INFO.venueShort}</div>
+            </div>
+            <div class="text-xs font-extrabold shrink-0">
+              <span class="text-gray-400">선택</span>
+              <span id="selectedQtyCounter" class="text-[#00A8FF] tabular-nums ml-1">${state.selectedSeats.length} / ${state.settings.qty}매</span>
+            </div>
+          </div>
+
+          <!-- 직접 선택 vs 자동 배정 탭 -->
+          <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#161822] border border-[#252836]">
+            <button id="tabDirectSeat" class="py-2 rounded-lg text-xs font-bold transition ${isDirect ? 'bg-[#0074E9] text-white shadow' : 'text-gray-400 hover:text-white'}">
+              직접 선택 (구역/좌석)
+            </button>
+            <button id="tabAutoSeat" class="py-2 rounded-lg text-xs font-bold transition ${!isDirect ? 'bg-[#0074E9] text-white shadow' : 'text-gray-400 hover:text-white'}">
+              자동 배정 (빠른 선점)
+            </button>
+          </div>
+
+          <!-- 동적 뷰 컨테이너 -->
+          <div id="seatMainArea"></div>
+        </div>
+      `;
+
+      $('#tabDirectSeat').onclick = () => {
+        SoundFX.click();
+        state.seatMode = 'direct';
+        renderStep3Body();
+        renderStep3Footer();
+      };
+      $('#tabAutoSeat').onclick = () => {
+        SoundFX.click();
+        state.seatMode = 'auto';
+        state.activeZoneId = null;
+        renderStep3Body();
+        renderStep3Footer();
+      };
+
+      updateStep3DynamicUI();
+    }
+
+    function updateStep3DynamicUI() {
+      if (state.step !== 3) return;
+      const qtyEl = $('#selectedQtyCounter');
+      if (qtyEl) qtyEl.textContent = `${state.selectedSeats.length} / ${state.settings.qty}매`;
+
+      const area = $('#seatMainArea');
+      if (!area) return;
+
+      if (state.seatMode === 'auto') {
+        renderAutoAssignView(area);
+      } else if (state.activeZoneId) {
+        renderZoneDetailSeats(area, state.activeZoneId);
+      } else {
+        renderArenaZoneMap(area);
+      }
+      renderStep3Footer();
+    }
+
+    // 3-A. 전체 구역 SVG 맵 + 등급별 실시간 잔여석 리스트 (올림픽공원 올림픽홀 맞춤형)
+    function renderArenaZoneMap(container) {
+      const totalAvail = getTotalAvailableCount();
+
+      const svgZones = CONCERT_INFO.zones.map((z) => {
+        const cnt = getZoneAvailableCount(z.id);
+        const hasHotCancel = state.seatsByZone[z.id].some((s) => s.status === 'cancel_hot');
+        const gradeColor = CONCERT_INFO.grades[z.grade].hex;
+        const cls = cnt === 0 ? 'zone-shape sold-out' : hasHotCancel ? 'zone-shape cancel-hot' : 'zone-shape';
+
+        return `
+          <g class="zone-group" data-zone-id="${z.id}">
+            <rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="8"
+              fill="${cnt > 0 ? gradeColor : '#1f222e'}"
+              fill-opacity="${cnt > 0 ? (hasHotCancel ? '0.95' : '0.70') : '1'}"
+              stroke="${cnt > 0 ? '#ffffff' : '#2e3345'}"
+              stroke-opacity="${cnt > 0 ? '0.28' : '1'}"
+              stroke-width="1.2"
+              class="${cls}" />
+            <text x="${z.x + z.w / 2}" y="${z.y + z.h / 2 - 4}" text-anchor="middle" fill="${cnt > 0 ? '#ffffff' : '#6b7280'}" font-size="11.5" font-weight="800" pointer-events="none">${z.id}</text>
+            <text x="${z.x + z.w / 2}" y="${z.y + z.h / 2 + 11}" text-anchor="middle" fill="${hasHotCancel ? '#7dd3fc' : cnt > 0 ? '#e5e7eb' : '#4b5563'}" font-size="10" font-weight="700" pointer-events="none">${cnt > 0 ? cnt + '석' : '매진'}</text>
+          </g>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="space-y-3">
+          <!-- 인터랙티브 올림픽홀 SVG 배치도 -->
+          <div class="bg-[#12141e] border border-[#24283a] rounded-2xl p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-bold text-gray-300">올림픽홀 구역을 클릭해 좌석을 선택하세요</span>
+              <span class="text-[11px] font-bold tabular-nums ${totalAvail > 0 ? 'text-[#00A8FF]' : 'text-red-400'}">총 잔여 ${totalAvail}석</span>
+            </div>
+
+            <svg viewBox="0 0 340 352" class="w-full h-auto block select-none">
+              <!-- 메인 무대 (STAGE) + 돌출 무대 -->
+              <rect x="75" y="8" width="190" height="34" rx="8" fill="#1e2438" stroke="#00A8FF" stroke-opacity="0.55" stroke-width="1.5" />
+              <rect x="145" y="42" width="50" height="20" rx="4" fill="#1e2438" stroke="#00A8FF" stroke-opacity="0.45" stroke-width="1.2" />
+              <text x="170" y="30" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="900" letter-spacing="3">STAGE</text>
+
+              <!-- 1층 플로어 라벨 -->
+              <text x="170" y="77" text-anchor="middle" fill="#c084fc" font-size="9.5" font-weight="800" letter-spacing="1.2">1F FLOOR · VIP석 (A1~A3)</text>
+
+              <!-- 1층/2층 경계 곡선 및 2층 라벨 -->
+              <path d="M 20 166 Q 170 182 320 166" fill="none" stroke="#2d344d" stroke-width="1.3" stroke-dasharray="4 3" />
+              <text x="170" y="182" text-anchor="middle" fill="#7dd3fc" font-size="9.5" font-weight="800" letter-spacing="1.2">2F 지정석 · R석(B1~B4) / S석(C1~C3)</text>
+
+              ${svgZones}
+            </svg>
+
+            <!-- 범례 -->
+            <div class="flex flex-wrap items-center justify-center gap-3 mt-2 pt-2 border-t border-[#1e2232] text-[10px] text-gray-400">
+              ${Object.entries(CONCERT_INFO.grades).map(([k, g]) => `
+                <span class="flex items-center gap-1">
+                  <span class="w-2.5 h-2.5 rounded-sm" style="background:${g.hex}"></span>${k}석
+                </span>
+              `).join('')}
+              <span class="flex items-center gap-1">
+                <span class="w-2.5 h-2.5 rounded-sm bg-[#242836]"></span>매진
+              </span>
+            </div>
+          </div>
+
+          <!-- 구역 빠른 선택 리스트 -->
+          <div class="space-y-1.5">
+            <div class="text-[11px] font-bold text-gray-400 px-1">실시간 구역별 잔여석</div>
+            <div class="grid grid-cols-1 gap-1.5">
+              ${CONCERT_INFO.zones.map((z) => {
+                const cnt = getZoneAvailableCount(z.id);
+                const hasHot = state.seatsByZone[z.id].some((s) => s.status === 'cancel_hot');
+                const g = CONCERT_INFO.grades[z.grade];
+                return `
+                  <button data-zone-id="${z.id}" class="zone-list-btn btn-press w-full px-3.5 py-2.5 rounded-xl bg-[#161822] hover:bg-[#1d2130] border ${hasHot ? 'border-[#00A8FF] cancel-pulse' : 'border-[#252836]'} flex items-center justify-between transition">
+                    <div class="flex items-center gap-2.5">
+                      <span class="w-2.5 h-2.5 rounded-full" style="background:${cnt > 0 ? g.color : '#374151'}"></span>
+                      <span class="text-xs font-bold ${cnt > 0 ? 'text-white' : 'text-gray-500'}">${z.name}</span>
+                      <span class="text-[10px] text-gray-400">${formatMoney(g.price)}</span>
+                      ${hasHot ? '<span class="px-1.5 py-0.5 rounded bg-[#00A8FF]/20 text-[#00A8FF] text-[10px] font-extrabold">취소표!</span>' : ''}
+                    </div>
+                    <span class="text-xs font-extrabold tabular-nums ${cnt > 0 ? 'text-[#00A8FF]' : 'text-gray-600'}">
+                      ${cnt > 0 ? cnt + '석 ›' : '매진'}
+                    </span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      const openZone = (zoneId) => {
+        SoundFX.click();
+        if (getZoneAvailableCount(zoneId) === 0 && state.settings.mode === 'regular') {
+          showToast('해당 구역은 현재 매진입니다. 다른 구역을 선택해주세요.', 'error');
+          return;
+        }
+        state.activeZoneId = zoneId;
+        updateStep3DynamicUI();
+      };
+
+      container.querySelectorAll('.zone-group, .zone-list-btn').forEach((el) => {
+        el.onclick = () => openZone(el.dataset.zoneId);
+      });
+    }
+
+    // 3-B. 선택 구역의 세부 좌석 배치도 (행/열)
+    function renderZoneDetailSeats(container, zoneId) {
+      const zone = CONCERT_INFO.zones.find((z) => z.id === zoneId);
+      const grade = CONCERT_INFO.grades[zone.grade];
+      const seats = state.seatsByZone[zoneId];
+      const availCnt = getZoneAvailableCount(zoneId);
+
+      // 구역 빠른 전환 필(Pill)
+      const zonePills = CONCERT_INFO.zones.map((z) => {
+        const cnt = getZoneAvailableCount(z.id);
+        const active = z.id === zoneId;
+        const hot = state.seatsByZone[z.id].some((s) => s.status === 'cancel_hot');
+        return `
+          <button data-pill-zone="${z.id}" class="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+            active
+              ? 'bg-[#00A8FF] text-white border-[#00A8FF]'
+              : hot
+                ? 'bg-sky-500/20 text-sky-300 border-[#00A8FF] animate-pulse'
+                : 'bg-[#161822] text-gray-400 border-[#262a3d] hover:text-white'
+          }">
+            ${z.id} (${cnt})
+          </button>
+        `;
+      }).join('');
+
+      // 행 단위 좌석 그리드 생성
+      let gridHtml = '';
+      for (let r = 1; r <= zone.rows; r++) {
+        const rowSeats = seats.filter((s) => s.row === r);
+        gridHtml += `
+          <div class="flex items-center justify-center gap-1">
+            <span class="w-6 text-[10px] font-mono text-gray-500 text-right pr-1 shrink-0">${r}열</span>
+            <div class="flex items-center gap-1 flex-wrap justify-center">
+              ${rowSeats.map((s) => {
+                const isSelected = state.selectedSeats.some((sel) => sel.seatId === s.id);
+                let cls = 'bg-[#222634] text-transparent cursor-not-allowed'; // sold
+                let inlineStyle = '';
+                if (isSelected) {
+                  cls = 'bg-[#00A8FF] text-white ring-2 ring-white shadow-md shadow-sky-500/50 scale-105 cursor-pointer font-extrabold';
+                } else if (s.status === 'cancel_hot') {
+                  cls = 'bg-sky-400 text-[#050608] cancel-pulse cursor-pointer font-extrabold';
+                } else if (s.status === 'available') {
+                  cls = 'hover:brightness-125 cursor-pointer text-white/90';
+                  inlineStyle = `background-color:${grade.hex};`;
+                }
+
+                return `
+                  <button data-seat-id="${s.id}" ${s.status === 'sold' ? 'disabled' : ''} style="${inlineStyle}"
+                    class="seat-cell w-7 h-7 sm:w-7 sm:h-7 rounded-md text-[10px] flex items-center justify-center transition ${cls}">
+                    ${isSelected ? '✓' : s.status !== 'sold' ? s.col : ''}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="space-y-3">
+          <!-- 상단 구역 헤더 & 뒤로가기 -->
+          <div class="flex items-center justify-between">
+            <button id="btnBackToMap" class="btn-press px-2.5 py-1.5 rounded-lg bg-[#1a1e2e] hover:bg-[#242a40] text-xs font-bold text-gray-200 flex items-center gap-1">
+              ← 전체 구역맵
+            </button>
+            <div class="text-right">
+              <span class="text-xs font-extrabold text-white">${zone.name}</span>
+              <span class="text-[11px] font-bold text-[#00A8FF] ml-1.5 tabular-nums">잔여 ${availCnt}석</span>
+            </div>
+          </div>
+
+          <!-- 빠른 구역 이동 바 -->
+          <div class="flex items-center gap-1.5 overflow-x-auto app-scroll pb-1">
+            ${zonePills}
+          </div>
+
+          <!-- 무대 방향 인디케이터 + 좌석표 -->
+          <div class="bg-[#12141e] border border-[#252836] rounded-2xl p-3.5">
+            <div class="w-3/4 mx-auto py-1 mb-4 rounded-md bg-[#1d2236] border border-[#00A8FF]/30 text-center text-[10px] font-extrabold tracking-[0.25em] text-sky-300">
+              ▲ STAGE 방향 ▲
+            </div>
+
+            <div class="space-y-1.5 overflow-x-auto pb-1">
+              ${gridHtml}
+            </div>
+
+            <div class="flex items-center justify-center gap-4 mt-4 pt-3 border-t border-[#1e2232] text-[10px] text-gray-400">
+              <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:${grade.hex}"></span>선택가능</span>
+              <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#00A8FF] ring-1 ring-white"></span>내 선택</span>
+              <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#222634]"></span>매진</span>
+            </div>
+          </div>
+
+          <!-- 현재 선택된 좌석 칩 목록 -->
+          ${state.selectedSeats.length > 0 ? `
+            <div class="p-3 rounded-xl bg-[#00A8FF]/10 border border-[#00A8FF]/35 space-y-1.5">
+              <div class="text-[11px] font-bold text-sky-300">선택한 좌석 (${state.selectedSeats.length}매)</div>
+              <div class="flex flex-wrap gap-1.5">
+                ${state.selectedSeats.map((s) => `
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#161822] border border-[#00A8FF]/50 text-xs font-bold text-white">
+                    ${s.zoneName} ${s.row}열 ${pad2(s.col)}번
+                    <button data-remove-seat="${s.seatId}" class="text-gray-400 hover:text-red-400">✕</button>
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      $('#btnBackToMap').onclick = () => {
+        SoundFX.click();
+        state.activeZoneId = null;
+        updateStep3DynamicUI();
+      };
+
+      container.querySelectorAll('[data-pill-zone]').forEach((btn) => {
+        btn.onclick = () => {
+          SoundFX.click();
+          state.activeZoneId = btn.dataset.pillZone;
+          updateStep3DynamicUI();
+        };
+      });
+
+      container.querySelectorAll('[data-remove-seat]').forEach((btn) => {
+        btn.onclick = () => {
+          SoundFX.click();
+          state.selectedSeats = state.selectedSeats.filter((s) => s.seatId !== btn.dataset.removeSeat);
+          updateStep3DynamicUI();
+        };
+      });
+
+      // 개별 좌석 클릭 처리
+      container.querySelectorAll('.seat-cell:not(:disabled)').forEach((btn) => {
+        btn.onclick = () => {
+          const seatId = btn.dataset.seatId;
+          const seatObj = seats.find((s) => s.id === seatId);
+          if (!seatObj || seatObj.status === 'sold') {
+            SoundFX.error();
+            showToast('이미 매진된 좌석입니다.', 'error');
+            updateStep3DynamicUI();
+            return;
+          }
+
+          const existingIdx = state.selectedSeats.findIndex((s) => s.seatId === seatId);
+          if (existingIdx >= 0) {
+            SoundFX.click();
+            state.selectedSeats.splice(existingIdx, 1);
+            updateStep3DynamicUI();
+            return;
+          }
+
+          if (state.selectedSeats.length >= state.settings.qty) {
+            SoundFX.error();
+            showToast(`최대 ${state.settings.qty}매까지만 선택할 수 있습니다.`, 'info');
+            return;
+          }
+
+          SoundFX.click();
+          state.selectedSeats.push({
+            zoneId: zone.id,
+            zoneName: zone.name,
+            grade: zone.grade,
+            price: grade.price,
+            seatId: seatObj.id,
+            row: seatObj.row,
+            col: seatObj.col
+          });
+          updateStep3DynamicUI();
+        };
+      });
+    }
+
+    // 3-C. 자동 배정 화면
+    function renderAutoAssignView(container) {
+      const gradeCounts = {};
+      Object.keys(CONCERT_INFO.grades).forEach((g) => {
+        gradeCounts[g] = CONCERT_INFO.zones
+          .filter((z) => z.grade === g)
+          .reduce((sum, z) => sum + getZoneAvailableCount(z.id), 0);
+      });
+
+      container.innerHTML = `
+        <div class="space-y-3">
+          <div class="p-3.5 rounded-2xl bg-[#12141e] border border-[#24283a] text-xs text-gray-300 leading-relaxed">
+            원하는 좌석 등급을 선택한 뒤 <strong class="text-white">자동 배정 시도</strong>를 누르면 잔여석(2매 선택 시 연석 우선)을 즉시 선점합니다.
+          </div>
+
+          <div class="space-y-2">
+            ${Object.entries(CONCERT_INFO.grades).map(([k, g]) => {
+              const cnt = gradeCounts[k];
+              const isSel = state.selectedGradeForAuto === k;
+              return `
+                <button data-auto-grade="${k}" class="auto-grade-btn btn-press w-full p-4 rounded-2xl bg-[#161822] border-2 ${isSel ? 'border-[#00A8FF] bg-[#00A8FF]/10' : 'border-[#252836]'} flex items-center justify-between transition">
+                  <div class="flex items-center gap-3">
+                    <span class="w-3.5 h-3.5 rounded-md" style="background:${g.color}"></span>
+                    <div class="text-left">
+                      <div class="text-sm font-extrabold text-white">${g.name}</div>
+                      <div class="text-xs text-gray-400 mt-0.5">${formatMoney(g.price)}</div>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-sm font-extrabold tabular-nums ${cnt > 0 ? 'text-[#00A8FF]' : 'text-gray-600'}">
+                      ${cnt > 0 ? cnt + '석' : '매진'}
+                    </span>
+                  </div>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+
+      container.querySelectorAll('.auto-grade-btn').forEach((btn) => {
+        btn.onclick = () => {
+          SoundFX.click();
+          state.selectedGradeForAuto = btn.dataset.autoGrade;
+          updateStep3DynamicUI();
+        };
+      });
+    }
+
+    function renderStep3Footer() {
+      const footer = $('#appFooter');
+      if (state.seatMode === 'auto') {
+        footer.innerHTML = `
+          <button id="btnAttemptAuto" class="btn-press w-full py-3.5 rounded-xl bg-gradient-to-r from-[#0074E9] to-[#00A8FF] text-white font-extrabold text-[15px] shadow-lg shadow-sky-500/25">
+            ${state.selectedGradeForAuto}석 ${state.settings.qty}매 자동 배정 시도
+          </button>
+        `;
+        $('#btnAttemptAuto').onclick = attemptAutoAssign;
+        return;
+      }
+
+      const ready = state.selectedSeats.length === state.settings.qty;
+      const totalPrice = state.selectedSeats.reduce((sum, s) => sum + s.price, 0);
+
+      footer.innerHTML = `
+        <button id="btnConfirmSeats" ${ready ? '' : 'disabled'} class="btn-press w-full py-3.5 rounded-xl font-extrabold text-[15px] transition ${
+          ready
+            ? 'bg-gradient-to-r from-[#0074E9] to-[#00A8FF] text-white shadow-lg shadow-sky-500/25'
+            : 'bg-[#1e2130] text-gray-500 cursor-not-allowed'
+        }">
+          ${ready ? `좌석 선택 완료 (${formatMoney(totalPrice)})` : `${state.settings.qty}매 좌석을 선택해주세요 (${state.selectedSeats.length}/${state.settings.qty})`}
+        </button>
+      `;
+
+      if (ready) {
+        $('#btnConfirmSeats').onclick = attemptConfirmDirectSeats;
+      }
+    }
+
+    // 직접 선택 완료 시 리얼 '이선좌' 판정 로직
+    function attemptConfirmDirectSeats() {
+      const diff = DIFFICULTY_CFG[state.settings.difficulty];
+
+      // 1) 이미 방금 매진된 좌석이 섞여있는지 검사
+      const alreadyTaken = state.selectedSeats.some((sel) => {
+        const seatObj = state.seatsByZone[sel.zoneId].find((s) => s.id === sel.seatId);
+        return !seatObj || seatObj.status === 'sold';
+      });
+
+      // 2) 난이도별 이선좌 확률 판정 (VIP/R석일수록 경쟁 확률 소폭 가중)
+      const hasVip = state.selectedSeats.some((s) => s.grade === 'VIP');
+      const prob = Math.min(0.65, diff.iseonjwaProb + (hasVip ? 0.08 : 0));
+      const hitIseonjwa = alreadyTaken || Math.random() < prob;
+
+      if (hitIseonjwa) {
+        state.iseonjwaCount += 1;
+        SoundFX.error();
+
+        // 선택했던 좌석 중 하나(또는 전부)를 매진 처리
+        const stolenSeat = state.selectedSeats[0];
+        if (stolenSeat) {
+          const obj = state.seatsByZone[stolenSeat.zoneId].find((s) => s.id === stolenSeat.seatId);
+          if (obj) obj.status = 'sold';
+        }
+        state.selectedSeats = [];
+
+        showModal({
+          icon: '😱',
+          title: '이미 선택된 좌석입니다.',
+          body: '다른 고객이 먼저 좌석을 선점했습니다.\n다른 좌석을 선택해주세요.',
+          buttonText: '다른 좌석 선택하기',
+          onConfirm: () => updateStep3DynamicUI()
+        });
+        return;
+      }
+
+      // 좌석 선점 성공!
+      SoundFX.click();
+      clearAllTimers();
+      state.metrics.step3Duration = (performance.now() - state.metrics.step3Start) / 1000;
+      enterStep4Payment();
+    }
+
+    // 자동 배정 시도 로직
+    function attemptAutoAssign() {
+      const targetGrade = state.selectedGradeForAuto;
+      const qty = state.settings.qty;
+      const diff = DIFFICULTY_CFG[state.settings.difficulty];
+
+      const zones = CONCERT_INFO.zones.filter((z) => z.grade === targetGrade);
+      let candidateSeats = [];
+      let candidateZone = null;
+
+      // 연석 우선 탐색
+      for (const z of zones) {
+        const list = state.seatsByZone[z.id];
+        if (qty === 2) {
+          for (let i = 0; i < list.length - 1; i++) {
+            if (list[i].status !== 'sold' && list[i + 1].status !== 'sold' && list[i].row === list[i + 1].row) {
+              candidateSeats = [list[i], list[i + 1]];
+              candidateZone = z;
+              break;
+            }
+          }
+        } else {
+          const found = list.find((s) => s.status !== 'sold');
+          if (found) {
+            candidateSeats = [found];
+            candidateZone = z;
+          }
+        }
+        if (candidateSeats.length === qty) break;
+      }
+
+      // 2매 연석 없으면 동일 구역 비연석 탐색
+      if (candidateSeats.length < qty && qty === 2) {
+        for (const z of zones) {
+          const avail = state.seatsByZone[z.id].filter((s) => s.status !== 'sold');
+          if (avail.length >= 2) {
+            candidateSeats = avail.slice(0, 2);
+            candidateZone = z;
+            break;
+          }
+        }
+      }
+
+      if (candidateSeats.length < qty) {
+        SoundFX.error();
+        showModal({
+          icon: '😥',
+          title: '잔여 좌석이 부족합니다',
+          body: `${targetGrade}석에 요청하신 ${qty}매의 잔여석이 없습니다.\n다른 등급을 선택하거나 새로고침해보세요.`,
+          buttonText: '확인',
+          onConfirm: () => updateStep3DynamicUI()
+        });
+        return;
+      }
+
+      // 자동 배정도 이선좌 경쟁 적용
+      if (Math.random() < diff.iseonjwaProb * 0.85) {
+        state.iseonjwaCount += 1;
+        candidateSeats.forEach((s) => (s.status = 'sold'));
+        SoundFX.error();
+        showModal({
+          icon: '⚡',
+          title: '이미 선택된 좌석입니다.',
+          body: '자동 배정 중 다른 고객이 좌석을 선점했습니다.\n다시 시도해주세요.',
+          buttonText: '재시도',
+          onConfirm: () => updateStep3DynamicUI()
+        });
+        return;
+      }
+
+      // 자동 배정 성공
+      const gradeInfo = CONCERT_INFO.grades[candidateZone.grade];
+      state.selectedSeats = candidateSeats.map((s) => ({
+        zoneId: candidateZone.id,
+        zoneName: candidateZone.name,
+        grade: candidateZone.grade,
+        price: gradeInfo.price,
+        seatId: s.id,
+        row: s.row,
+        col: s.col
+      }));
+
+      SoundFX.click();
+      clearAllTimers();
+      state.metrics.step3Duration = (performance.now() - state.metrics.step3Start) / 1000;
+      showToast(`자동 배정 성공! ${candidateZone.name}`, 'success');
+      enterStep4Payment();
+    }
+
+    /* =========================================================================
+       12. STEP 4: 예매자 정보 확인 & 결제 (쿠페이 랜덤 6자리 PIN 연습)
+       ========================================================================= */
+    function enterStep4Payment() {
+      state.step = 4;
+      state.metrics.step4Start = performance.now();
+      state.agreedPaymentTerms = false;
+      state.paymentMethod = 'coupay';
+
+      const session = CONCERT_INFO.sessions.find((s) => s.id === state.selectedSessionId) || CONCERT_INFO.sessions[0];
+      const ticketSum = state.selectedSeats.reduce((sum, s) => sum + s.price, 0);
+      const feeSum = CONCERT_INFO.feePerTicket * state.selectedSeats.length;
+      const grandTotal = ticketSum + feeSum;
+
+      setHeader({
+        title: '결제하기',
+        showBack: false,
+        progressPct: 86,
+        rightHtml: `<span class="text-[11px] font-bold text-emerald-400">좌석 선점됨</span>`
+      });
+
+      const content = $('#appContent');
+      content.scrollTop = 0;
+      content.innerHTML = `
+        <div class="p-4 space-y-4 step-enter pb-6">
+          <!-- 선택한 공연 & 좌석 요약 -->
+          <div class="p-4 rounded-2xl bg-[#161822] border border-[#262a3d] space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="text-[11px] font-bold text-[#00A8FF]">예매 공연 정보</div>
+                <div class="text-sm font-extrabold text-white mt-0.5">${CONCERT_INFO.title}</div>
+                <div class="text-xs text-gray-400 mt-1">${session.dateLabel} ${session.timeLabel} · ${CONCERT_INFO.venue}</div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-[#24283a] space-y-1.5">
+              ${state.selectedSeats.map((s) => `
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-sky-300">${s.zoneName} ${s.row}열 ${pad2(s.col)}번</span>
+                  <span class="text-gray-200 font-semibold tabular-nums">${formatMoney(s.price)}</span>
+                </div>
+              `).join('')}
+              <div class="flex items-center justify-between text-xs text-gray-400">
+                <span>예매 수수료 (${state.selectedSeats.length}매)</span>
+                <span class="tabular-nums">${formatMoney(feeSum)}</span>
+              </div>
+              <div class="pt-2 border-t border-[#24283a] flex items-center justify-between">
+                <span class="text-sm font-bold text-white">총 결제 금액</span>
+                <span class="text-lg font-black text-[#00A8FF] tabular-nums">${formatMoney(grandTotal)}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 예매자 정보 자동 입력 확인 -->
+          <div class="p-4 rounded-2xl bg-[#161822] border border-[#252836] space-y-2 text-xs">
+            <div class="flex items-center justify-between mb-1">
+              <h3 class="text-sm font-bold text-white">예매자 정보</h3>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-bold">와우회원 자동입력</span>
+            </div>
+            <div class="flex justify-between"><span class="text-gray-400">이름</span><span class="text-white font-semibold">홍길동</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">연락처</span><span class="text-gray-200 font-mono">010-****-5678</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">티켓 수령</span><span class="text-sky-300 font-semibold">모바일 티켓 (스마트 티켓)</span></div>
+          </div>
+
+          <!-- 결제 수단 선택 -->
+          <div class="p-4 rounded-2xl bg-[#161822] border border-[#252836] space-y-2.5">
+            <h3 class="text-sm font-bold text-white">결제 수단</h3>
+            <div class="grid grid-cols-1 gap-2">
+              ${[
+                { id: 'coupay', label: '쿠페이 원터치 결제', sub: '가장 빠른 결제 · 연습 PIN 지원', badge: '추천' },
+                { id: 'card',   label: '신용 / 체크카드',   sub: '현대 · 삼성 · 신한 · KB국민', badge: '' },
+                { id: 'bank',   label: '실시간 계좌이체',   sub: '수수료 없음', badge: '' }
+              ].map((m) => `
+                <button data-pay-method="${m.id}" class="pay-method-btn btn-press w-full p-3 rounded-xl border text-left flex items-center justify-between transition ${
+                  m.id === 'coupay' ? 'bg-[#00A8FF]/10 border-[#00A8FF]' : 'bg-[#12141e] border-[#252836]'
+                }">
+                  <div>
+                    <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span>${m.label}</span>
+                      ${m.badge ? `<span class="px-1.5 py-0.5 rounded bg-[#0074E9] text-[10px] font-extrabold text-white">${m.badge}</span>` : ''}
+                    </div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">${m.sub}</div>
+                  </div>
+                  <div class="pay-dot w-4 h-4 rounded-full border-2 ${m.id === 'coupay' ? 'border-[#00A8FF] bg-[#00A8FF]' : 'border-gray-500'}"></div>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- 필수 약관 전체 동의 -->
+          <label class="flex items-center gap-3 p-4 rounded-2xl bg-[#161822] border border-[#2a2f42] cursor-pointer hover:border-[#00A8FF]/60 transition">
+            <input type="checkbox" id="chkPaymentAgree" class="w-5 h-5 accent-[#00A8FF] rounded cursor-pointer shrink-0" />
+            <div class="text-xs leading-snug">
+              <div class="font-extrabold text-white">결제 및 취소 수수료 규정 전체 동의</div>
+              <div class="text-[11px] text-gray-400 mt-0.5">주문 내역 확인 및 제3자 정보 제공에 동의합니다.</div>
+            </div>
+          </label>
+        </div>
+      `;
+
+      // 결제 수단 선택
+      $$('.pay-method-btn').forEach((btn) => {
+        btn.onclick = () => {
+          SoundFX.click();
+          state.paymentMethod = btn.dataset.payMethod;
+          $$('.pay-method-btn').forEach((b) => {
+            const active = b.dataset.payMethod === state.paymentMethod;
+            b.classList.toggle('bg-[#00A8FF]/10', active);
+            b.classList.toggle('border-[#00A8FF]', active);
+            b.classList.toggle('bg-[#12141e]', !active);
+            b.classList.toggle('border-[#252836]', !active);
+            const dot = b.querySelector('.pay-dot');
+            dot.classList.toggle('border-[#00A8FF]', active);
+            dot.classList.toggle('bg-[#00A8FF]', active);
+            dot.classList.toggle('border-gray-500', !active);
+          });
+        };
+      });
+
+      $('#chkPaymentAgree').onchange = (e) => {
+        SoundFX.click();
+        state.agreedPaymentTerms = e.target.checked;
+        updateStep4Footer(grandTotal);
+      };
+
+      updateStep4Footer(grandTotal);
+    }
+
+    function updateStep4Footer(grandTotal) {
+      const ready = state.agreedPaymentTerms;
+      $('#appFooter').innerHTML = `
+        <button id="btnPayNow" ${ready ? '' : 'disabled'} class="btn-press w-full py-3.5 rounded-xl font-extrabold text-[15px] transition ${
+          ready
+            ? 'bg-gradient-to-r from-[#0074E9] to-[#00A8FF] text-white shadow-lg shadow-sky-500/25'
+            : 'bg-[#1e2130] text-gray-500 cursor-not-allowed'
+        }">
+          ${formatMoney(grandTotal)} 결제하기
+        </button>
+      `;
+      if (ready) {
+        $('#btnPayNow').onclick = () => {
+          SoundFX.click();
+          if (state.settings.useKeypad) {
+            openCoupayKeypad();
+          } else {
+            completePaymentSuccess();
+          }
+        };
+      }
+    }
+
+    // 쿠페이 6자리 무작위 보안 키패드
+    function openCoupayKeypad() {
+      state.pinInput = '';
+      state.pinCodeTarget = '123456';
+      $('#keypadHintCode').textContent = state.pinCodeTarget;
+      $('#keypadErrorMsg').textContent = '';
+      updateKeypadDots();
+      buildShuffledKeypad();
+      $('#keypadOverlay').classList.remove('hidden');
+    }
+
+    function buildShuffledKeypad() {
+      const digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+      // Fisher-Yates 셔플
+      for (let i = digits.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [digits[i], digits[j]] = [digits[j], digits[i]];
+      }
+
+      const grid = $('#keypadGrid');
+      const cells = [
+        ...digits.slice(0, 9),
+        'SHUFFLE',
+        digits[9],
+        'BACK'
+      ];
+
+      grid.innerHTML = cells.map((val) => {
+        if (val === 'SHUFFLE') {
+          return `<button data-key="SHUFFLE" class="btn-press h-12 rounded-xl bg-[#1b1f2e] hover:bg-[#252a3f] text-xs font-bold text-gray-400">재배열</button>`;
+        }
+        if (val === 'BACK') {
+          return `<button data-key="BACK" class="btn-press h-12 rounded-xl bg-[#1b1f2e] hover:bg-[#252a3f] text-base font-bold text-gray-200">⌫</button>`;
+        }
+        return `<button data-key="${val}" class="btn-press h-12 rounded-xl bg-[#1f2436] hover:bg-[#2a3048] active:bg-[#0074E9] text-lg font-extrabold text-white font-mono transition">${val}</button>`;
+      }).join('');
+
+      grid.querySelectorAll('button').forEach((btn) => {
+        btn.onclick = () => {
+          const k = btn.dataset.key;
+          if (k === 'SHUFFLE') {
+            SoundFX.click();
+            buildShuffledKeypad();
+            return;
+          }
+          if (k === 'BACK') {
+            SoundFX.key();
+            state.pinInput = state.pinInput.slice(0, -1);
+            $('#keypadErrorMsg').textContent = '';
+            updateKeypadDots();
+            return;
+          }
+
+          if (state.pinInput.length < 6) {
+            SoundFX.key();
+            state.pinInput += k;
+            updateKeypadDots();
+
+            if (state.pinInput.length === 6) {
+              if (state.pinInput === state.pinCodeTarget) {
+                setTimeout(() => {
+                  $('#keypadOverlay').classList.add('hidden');
+                  completePaymentSuccess();
+                }, 120);
+              } else {
+                SoundFX.error();
+                const dotsWrap = $('#keypadDots');
+                dotsWrap.classList.remove('animate-shake');
+                void dotsWrap.offsetWidth;
+                dotsWrap.classList.add('animate-shake');
+                $('#keypadErrorMsg').textContent = '비밀번호가 일치하지 않습니다. 다시 입력해주세요.';
+                setTimeout(() => {
+                  state.pinInput = '';
+                  updateKeypadDots();
+                  buildShuffledKeypad();
+                }, 360);
+              }
+            }
+          }
+        };
+      });
+    }
+
+    function updateKeypadDots() {
+      const dots = $$('#keypadDots .pin-dot');
+      dots.forEach((dot, idx) => {
+        const filled = idx < state.pinInput.length;
+        dot.classList.toggle('bg-[#00A8FF]', filled);
+        dot.classList.toggle('scale-110', filled);
+        dot.classList.toggle('bg-[#2a2f42]', !filled);
+      });
+    }
+
+    function completePaymentSuccess() {
+      state.metrics.step4Duration = (performance.now() - state.metrics.step4Start) / 1000;
+      state.metrics.resultSuccess = true;
+      const reactionSec = state.metrics.reactionMs ? state.metrics.reactionMs / 1000 : 0;
+      state.metrics.totalActiveSec = Number((reactionSec + state.metrics.step1Duration + state.metrics.step3Duration + state.metrics.step4Duration).toFixed(2));
+
+      SoundFX.success();
+      enterStep5Result();
+    }
+
+    function finishWithFailure(reason) {
+      clearAllTimers();
+      state.metrics.resultSuccess = false;
+      state.metrics.failReason = reason;
+      SoundFX.error();
+      enterStep5Result();
+    }
+
+    /* =========================================================================
+       13. STEP 5: 예매 완료 모바일 티켓 & 상세 기록 분석 (또는 실패 화면)
+       ========================================================================= */
+    function calculateRank() {
+      if (!state.metrics.resultSuccess) return 'FAIL';
+      const t = state.metrics.totalActiveSec;
+      const diffBonus = state.settings.difficulty === 'hell' ? 3.5 : state.settings.difficulty === 'normal' ? 1.5 : 0;
+      const keypadBonus = state.settings.useKeypad ? 2.5 : 0;
+      const qtyBonus = state.settings.qty === 2 ? 1.5 : 0;
+      const cancelBonus = state.settings.mode === 'cancel' ? 4.0 : 0;
+      const adj = t - diffBonus - keypadBonus - qtyBonus - cancelBonus;
+
+      if (adj <= 8.5) return 'S+';
+      if (adj <= 13.0) return 'S';
+      if (adj <= 19.0) return 'A';
+      if (adj <= 27.0) return 'B';
+      return 'C';
+    }
+
+    function enterStep5Result() {
+      state.step = 5;
+      const isSuccess = state.metrics.resultSuccess;
+      const rank = calculateRank();
+      const session = CONCERT_INFO.sessions.find((s) => s.id === state.selectedSessionId) || CONCERT_INFO.sessions[0];
+      const seatSummary = state.selectedSeats.map((s) => `${s.zoneName} ${s.row}열 ${pad2(s.col)}번`).join(', ');
+
+      // LocalStorage 기록 저장
+      const now = new Date();
+      const timestamp = `${pad2(now.getMonth() + 1)}/${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+      saveRecord({
+        success: isSuccess,
+        rank,
+        mode: state.settings.mode,
+        difficulty: state.settings.difficulty,
+        reactionMs: state.metrics.reactionMs,
+        totalActiveSec: state.metrics.totalActiveSec,
+        iseonjwaCount: state.iseonjwaCount,
+        seatSummary,
+        failReason: state.metrics.failReason,
+        timestamp
+      });
+
+      setHeader({
+        title: isSuccess ? '예매 완료' : '예매 실패',
+        showBack: false,
+        progressPct: 100,
+        rightHtml: `<span class="text-xs font-extrabold ${isSuccess ? 'text-emerald-400' : 'text-red-400'}">${rank} 등급</span>`
+      });
+
+      const content = $('#appContent');
+      content.scrollTop = 0;
+
+      if (!isSuccess) {
+        content.innerHTML = `
+          <div class="p-6 text-center space-y-5 step-enter">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-3xl mt-4">😭</div>
+            <div>
+              <h2 class="text-xl font-black text-white">티켓팅에 실패했습니다</h2>
+              <p class="text-sm text-red-400 font-semibold mt-1.5">${state.metrics.failReason}</p>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-[#161822] border border-[#252836] space-y-2.5 text-xs text-left">
+              <div class="flex justify-between"><span class="text-gray-400">연습 모드 / 난이도</span><span class="text-white font-bold">${state.settings.mode === 'cancel' ? '취켓팅' : '정규'} · ${DIFFICULTY_CFG[state.settings.difficulty].label}</span></div>
+              <div class="flex justify-between"><span class="text-gray-400">정각 반응속도</span><span class="text-[#00A8FF] font-bold font-mono">${state.metrics.reactionMs !== null ? state.metrics.reactionMs + 'ms' : '-'}</span></div>
+              <div class="flex justify-between"><span class="text-gray-400">이선좌 발생 횟수</span><span class="text-amber-400 font-bold">${state.iseonjwaCount}회</span></div>
+            </div>
+          </div>
+        `;
+      } else {
+        const resNo = `CP27-${randInt(100000, 999999)}`;
+        const rankStyle = {
+          'S+': 'from-fuchsia-500 to-sky-400',
+          'S': 'from-[#0074E9] to-[#00A8FF]',
+          'A': 'from-emerald-500 to-teal-400',
+          'B': 'from-amber-500 to-orange-400',
+          'C': 'from-gray-500 to-gray-400'
+        }[rank];
+
+        const rankComment = {
+          'S+': '신이 내린 손가락! 피켓팅 올킬 확정 실력입니다 🔥',
+          'S': '상위 1% 수준의 매우 빠른 티켓팅 속도입니다 ⚡',
+          'A': '실전 콘서트에서도 충분히 성공할 안정적인 실력입니다 👍',
+          'B': '조금만 더 손에 익히면 완벽합니다! 다시 도전해보세요 💪',
+          'C': '흐름은 완벽히 익혔습니다! 속도를 높여 연습해보세요 🎯'
+        }[rank];
+
+        // 깔끔한 SVG QR 패턴 생성
+        const qrSvg = generateMockQrSvg(resNo);
+
+        content.innerHTML = `
+          <div class="p-4 space-y-4 step-enter pb-6">
+            <!-- 축하 배너 + 등급 -->
+            <div class="text-center pt-1">
+              <span class="inline-block px-3 py-1 rounded-full bg-gradient-to-r ${rankStyle} text-white text-xs font-black tracking-wide shadow-lg">
+                티켓팅 등급 ${rank}
+              </span>
+              <h2 class="text-xl font-black text-white mt-2">예매가 완료되었습니다! 🎉</h2>
+              <p class="text-xs text-gray-400 mt-1">${rankComment}</p>
+            </div>
+
+            <!-- 쿠팡플레이 모바일 티켓 카드 -->
+            <div class="rounded-2xl overflow-hidden bg-[#161822] border border-[#2a2f45] shadow-2xl">
+              <div class="bg-gradient-to-r from-[#0058c4] via-[#0074E9] to-[#00A8FF] p-4 text-white">
+                <div class="flex items-center justify-between text-[11px] opacity-90">
+                  <span class="font-extrabold tracking-wider">COUPANG PLAY TICKET</span>
+                  <span class="font-mono">${resNo}</span>
+                </div>
+                <div class="text-base font-black mt-1.5 leading-snug">${CONCERT_INFO.title}</div>
+                <div class="text-xs opacity-95 mt-1 font-medium">${session.dateLabel} ${session.timeLabel}</div>
+                <div class="text-[11px] opacity-90 mt-0.5">📍 ${CONCERT_INFO.venueShort}</div>
+              </div>
+
+              <!-- 티켓 절취선 -->
+              <div class="relative py-2 border-b border-dashed border-[#2d3348]">
+                <div class="ticket-notch-left"></div>
+                <div class="ticket-notch-right"></div>
+              </div>
+
+              <div class="p-4 flex items-center justify-between gap-3">
+                <div class="space-y-1.5 min-w-0">
+                  <div class="text-[10px] font-bold text-gray-400">확정 좌석 (${state.selectedSeats.length}매)</div>
+                  ${state.selectedSeats.map((s) => `
+                    <div class="text-sm font-extrabold text-[#00A8FF] leading-tight">${s.zoneName} ${s.row}열 ${pad2(s.col)}번</div>
+                  `).join('')}
+                  <div class="text-[11px] text-gray-400 pt-1">예매자: 홍길동 (와우회원 본인확인)</div>
+                </div>
+                <div class="shrink-0 p-1.5 bg-white rounded-xl shadow">
+                  ${qrSvg}
+                </div>
+              </div>
+            </div>
+
+            <!-- 구간별 정밀 기록 분석 리포트 -->
+            <div class="p-4 rounded-2xl bg-[#161822] border border-[#252836] space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white">📊 구간별 정밀 기록 분석</h3>
+                <span class="text-xs font-bold text-gray-400">${state.settings.mode === 'cancel' ? '취켓팅' : '정규'} · ${DIFFICULTY_CFG[state.settings.difficulty].label}</span>
+              </div>
+
+              <!-- 총 순수 소요 시간 하이라이트 -->
+              <div class="p-3.5 rounded-xl bg-[#0d1018] border border-[#00A8FF]/30 flex items-center justify-between">
+                <div>
+                  <div class="text-[11px] text-gray-400">총 순수 조작 시간 (대기열 제외)</div>
+                  <div class="text-[10px] text-gray-500 mt-0.5">부정출발 ${state.falseStarts}회 · 이선좌 ${state.iseonjwaCount}회</div>
+                </div>
+                <div class="text-2xl font-black text-[#00A8FF] font-mono tabular-nums">
+                  ${state.metrics.totalActiveSec.toFixed(2)}<span class="text-sm font-bold ml-0.5">초</span>
+                </div>
+              </div>
+
+              <!-- 세부 구간 리스트 -->
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center justify-between py-1 border-b border-[#202434]">
+                  <span class="text-gray-400">1. 정각 반응 속도</span>
+                  <span class="font-bold font-mono tabular-nums ${state.metrics.reactionMs !== null && state.metrics.reactionMs <= 250 ? 'text-emerald-400' : 'text-white'}">
+                    ${state.metrics.reactionMs !== null ? state.metrics.reactionMs + ' ms' : '해당 없음 (취켓팅)'}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-[#202434]">
+                  <span class="text-gray-400">2. 회차 선택 · 본인 동의</span>
+                  <span class="font-bold font-mono tabular-nums text-white">${state.metrics.step1Duration.toFixed(2)} 초</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-[#202434]">
+                  <span class="text-gray-400">3. 가상 대기열 통과</span>
+                  <span class="font-bold font-mono tabular-nums text-gray-300">${state.metrics.queueDuration.toFixed(2)} 초</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-[#202434]">
+                  <span class="text-gray-400">4. 좌석 선택 완료</span>
+                  <span class="font-bold font-mono tabular-nums text-white">${state.metrics.step3Duration.toFixed(2)} 초</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-[#202434]">
+                  <span class="text-gray-400">5. 결제 완료 ${state.settings.useKeypad ? '(쿠페이 PIN 포함)' : ''}</span>
+                  <span class="font-bold font-mono tabular-nums text-white">${state.metrics.step4Duration.toFixed(2)} 초</span>
+                </div>
+                <div class="flex items-center justify-between py-1">
+                  <span class="text-gray-400">이선좌 발생 횟수</span>
+                  <span class="font-bold tabular-nums ${state.iseonjwaCount > 0 ? 'text-amber-400' : 'text-emerald-400'}">${state.iseonjwaCount} 회</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      $('#appFooter').innerHTML = `
+        <div class="grid grid-cols-3 gap-2">
+          <button id="btnViewRecordsFromResult" class="btn-press py-3.5 rounded-xl bg-[#1b1f2e] hover:bg-[#24293d] border border-[#2e344a] text-gray-200 font-bold text-xs">
+            🏆 기록 보기
+          </button>
+          <button id="btnRetrySame" class="btn-press col-span-2 py-3.5 rounded-xl bg-gradient-to-r from-[#0074E9] to-[#00A8FF] text-white font-extrabold text-sm shadow-lg shadow-sky-500/25">
+            ↻ 같은 설정으로 다시 도전
+          </button>
+        </div>
+      `;
+
+      $('#btnRetrySame').onclick = () => {
+        SoundFX.click();
+        resetSimulation(state.settings.mode === 'regular');
+      };
+      $('#btnViewRecordsFromResult').onclick = () => {
+        SoundFX.click();
+        renderHistoryModal();
+        $('#historyModal').classList.remove('hidden');
+      };
+    }
+
+    // 결정론적 SVG QR 코드 모양 생성
+    function generateMockQrSvg(seedStr) {
+      let hash = 0;
+      for (let i = 0; i < seedStr.length; i++) hash = (hash * 31 + seedStr.charCodeAt(i)) >>> 0;
+      const size = 11;
+      let rects = '';
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const isCorner =
+            (x < 3 && y < 3) ||
+            (x >= size - 3 && y < 3) ||
+            (x < 3 && y >= size - 3);
+          let fill = false;
+          if (isCorner) {
+            const cx = x < 3 ? x : x - (size - 3);
+            const cy = y < 3 ? y : y - (size - 3);
+            fill = !(cx === 1 && cy === 1);
+          } else {
+            hash = (hash * 1664525 + 1013904223) >>> 0;
+            fill = (hash % 100) < 48;
+          }
+          if (fill) {
+            rects += `<rect x="${x * 6}" y="${y * 6}" width="5.4" height="5.4" rx="1" fill="#0b0c10"/>`;
+          }
+        }
+      }
+      return `<svg width="66" height="66" viewBox="0 0 66 66" class="block">${rects}</svg>`;
+    }
+
+    /* =========================================================================
+       14. 초기화 실행
+       ========================================================================= */
+    window.addEventListener('DOMContentLoaded', () => {
+      syncSettingsUI();
+      bindHeaderControls();
+      updateBestTimeBadge();
+      resetSimulation(false);
+    });
+  </script>
+</body>
+</html>
